@@ -164,7 +164,7 @@ export function CategoryManager({ categories, onRefresh }: { categories: Categor
           finally { setDeletingId(null); }
         },
       },
-      cancel: { label: "Hủy" },
+      cancel: { label: "Hủy", onClick: () => {} },
       duration: 5000,
     });
   }
