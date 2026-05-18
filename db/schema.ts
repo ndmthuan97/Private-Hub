@@ -1,21 +1,8 @@
 // db/schema.ts — Drizzle ORM code-first schema
 import {
-  pgTable, uuid, text, jsonb, integer, boolean,
+  pgTable, uuid, text, jsonb, integer,
   timestamp, numeric, unique,
 } from "drizzle-orm/pg-core";
-
-// ─── Tech Digest ──────────────────────────────────────────────
-export const techDigests = pgTable("tech_digests", {
-  id:              uuid("id").primaryKey().defaultRandom(),
-  title:           text("title").notNull(),
-  summary:         text("summary").notNull().default(""),
-  highlights:      jsonb("highlights").notNull().default([]),
-  trendingTags:    text("trending_tags").array().notNull().default([]),
-  weekNumber:      integer("week_number").notNull(),
-  year:            integer("year").notNull(),
-  generatedByCron: boolean("generated_by_cron").notNull().default(false),
-  createdAt:       timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
 
 // ─── Budget ───────────────────────────────────────────────────
 
@@ -48,8 +35,6 @@ export const budgetEntries = pgTable("budget_entries", {
 ]);
 
 // ─── Types ────────────────────────────────────────────────────
-export type TechDigest      = typeof techDigests.$inferSelect;
-export type NewTechDigest   = typeof techDigests.$inferInsert;
 export type BudgetCategory  = typeof budgetCategories.$inferSelect;
 export type NewBudgetCategory = typeof budgetCategories.$inferInsert;
 export type BudgetEntry     = typeof budgetEntries.$inferSelect;

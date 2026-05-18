@@ -19,18 +19,22 @@ export function formatNumber(n: number): string {
 }
 
 export function formatDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (!dateStr || isNaN(d.getTime())) return "—";
   return new Intl.DateTimeFormat("vi-VN", {
     day: "2-digit",
     month: "long",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(dateStr));
+  }).format(d);
 }
 
 export function formatRelativeDate(dateStr: string): string {
+  if (!dateStr) return "—";
   const now = Date.now();
   const date = new Date(dateStr).getTime();
+  if (isNaN(date)) return "—";
   const diff = now - date;
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);

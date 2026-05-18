@@ -4,14 +4,18 @@ import { getDb } from "@/db";
 import { budgetEntries, budgetCategories } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-// PUT /api/budget/[id] — update amount/note (recalculate allocations)
+// PUT /api/budget/[id] — update totalAmount OR spent amounts per category
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
   try {
-    const body = await req.json() as { totalAmount?: number; note?: string };
+    const body = await req.json() as {
+      totalAmount?: number;
+      note?: string;
+      spentAmounts?: Record<string, number>; // { key: spent }
+    };
     const db = getDb();
 
     const updates: Record<string, unknown> = { updatedAt: new Date() };
@@ -27,7 +31,20 @@ export async function PUT(
         color:      c.color,
         percentage: parseFloat(String(c.percentage)),
         amount:     Math.round((body.totalAmount! * parseFloat(String(c.percentage))) / 100),
+        spent:      0,
       }));
+    }
+
+    if (body.spentAmounts !== undefined) {
+      // Fetch current entry, merge spent values
+      const [current] = await db.select().from(budgetEntries).where(eq(budgetEntries.id, id)).limit(1);
+      if (current) {
+        const allocs = (current.allocations as Array<Record<string, unknown>>).map(a => ({
+          ...a,
+          spent: body.spentAmounts![a.key as string] ?? (a.spent ?? 0),
+        }));
+        updates.allocations = allocs;
+      }
     }
 
     const [updated] = await db

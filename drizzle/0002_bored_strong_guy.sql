@@ -1,0 +1,1 @@
+DROP TABLE "tech_digests" CASCADE;

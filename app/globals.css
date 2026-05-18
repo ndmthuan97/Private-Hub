@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
-/* ─── Mona Sans VF (Vercel KI: RISK-1) ─────────────────────── */
+/* ── Tailwind dark: variant — maps to data-theme="dark" on <html> ── */
+@custom-variant dark (&:is([data-theme="dark"] *));
+
+/* ─── Mona Sans VF ─────────────────────────────────────────────── */
 @font-face {
   font-family: 'Mona Sans';
   src: url('https://cdn.jsdelivr.net/gh/github/mona-sans@1.0.1/fonts/variable/MonaSans%5Bwdth%2Cwght%5D.woff2')
@@ -10,135 +13,143 @@
   font-display: swap;
 }
 
-/* ─── Design Tokens ─────────────────────────────────────────── */
-/* Dark mode (default) */
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS — LIGHT (default / :root)
+   ═══════════════════════════════════════════════ */
 :root {
-  /* Surfaces (dark-first) */
-  --bg-base:      #0a0a0f;
-  --bg-surface:   #111118;
-  --bg-elevated:  #17171f;
-  --bg-hover:     #1e1e28;
+  /* Surfaces */
+  --bg-base:     #ffffff;
+  --bg-surface:  #fafafa;
+  --bg-elevated: #f5f5f5;
+  --bg-hover:    #ebebeb;
+
+  /* Text */
+  --fg-primary:   #171717;
+  --fg-secondary: #444444;
+  --fg-muted:     #888888;
+
+  /* Shadow-as-border */
+  --shadow-border: rgba(0,0,0,0.08) 0px 0px 0px 1px;
+  --shadow-card:   rgba(0,0,0,0.08) 0px 0px 0px 1px,
+                   rgba(0,0,0,0.04) 0px 2px 4px,
+                   rgba(0,0,0,0.04) 0px 8px 16px -8px;
+
+  /* Brand */
+  --brand:       hsl(239, 84%, 67%);
+  --brand-dim:   hsl(239, 84%, 55%);
+  --brand-bg:    hsl(239, 84%, 67%, 0.10);
+
+  /* Module accents */
+  --digest-color:  hsl(271, 91%, 65%);
+  --convo-color:   hsl(160, 84%, 42%);
+  --budget-color:  hsl(38,  92%, 52%);
+
+  /* Radius scale */
+  --radius-sm:      4px;
+  --radius-btn:     6px;
+  --radius-card:    8px;
+  --radius-card-lg: 12px;
+  --radius-badge:   9999px;
+
+  /* Z-index */
+  --z-sticky:   10;
+  --z-dropdown: 100;
+  --z-overlay:  200;
+  --z-toast:    300;
+
+  /* shadcn-compat */
+  --background:          var(--bg-base);
+  --foreground:          var(--fg-primary);
+  --card:                var(--bg-surface);
+  --card-foreground:     var(--fg-primary);
+  --muted:               var(--bg-elevated);
+  --muted-foreground:    var(--fg-muted);
+  --border:              rgba(0,0,0,0.08);
+  --input:               var(--bg-elevated);
+  --ring:                var(--brand);
+  --primary:             var(--brand);
+  --primary-foreground:  #ffffff;
+  --secondary:           var(--bg-elevated);
+  --secondary-foreground: var(--fg-primary);
+  --destructive:         hsl(0, 84%, 60%);
+  --destructive-foreground: #ffffff;
+  --popover:             var(--bg-surface);
+  --popover-foreground:  var(--fg-primary);
+  --bg-page:             var(--bg-base);
+  --accent:              var(--brand);
+
+  color-scheme: light;
+}
+
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS — DARK
+   ═══════════════════════════════════════════════ */
+[data-theme="dark"] {
+  /* Surfaces */
+  --bg-base:     #0a0a0f;
+  --bg-surface:  #111118;
+  --bg-elevated: #17171f;
+  --bg-hover:    #1e1e28;
 
   /* Text */
   --fg-primary:   #ededed;
   --fg-secondary: #a0a0b0;
   --fg-muted:     #5a5a70;
 
-  /* Borders via shadow-as-border (Vercel KI) */
-  --shadow-border:     rgba(255,255,255,0.06) 0px 0px 0px 1px;
-  --shadow-card:       rgba(255,255,255,0.06) 0px 0px 0px 1px,
-                       rgba(0,0,0,0.4) 0px 2px 2px,
-                       rgba(0,0,0,0.3) 0px 8px 8px -8px;
+  /* Shadow-as-border */
+  --shadow-border: rgba(255,255,255,0.08) 0px 0px 0px 1px;
+  --shadow-card:   rgba(255,255,255,0.06) 0px 0px 0px 1px,
+                   rgba(0,0,0,0.4)  0px 2px 2px,
+                   rgba(0,0,0,0.3)  0px 8px 8px -8px;
 
-  /* Brand */
-  --brand:        hsl(239, 84%, 67%);
-  --brand-dim:    hsl(239, 84%, 55%);
-  --brand-bg:     hsl(239, 84%, 67%, 0.10);
-
-  /* Module accents (semantic only) */
-  --digest-color:  hsl(271, 91%, 65%);
-  --convo-color:   hsl(160, 84%, 42%);
-  --budget-color:  hsl(38,  92%, 52%);
-
-  /* Radius (Vercel KI scale) */
-  --radius-sm:  4px;
-  --radius-btn: 6px;
-  --radius-card: 8px;
-  --radius-card-lg: 12px;
-  --radius-badge: 9999px;
-
-  /* Z-index (Vercel KI) */
-  --z-sticky:   10;
-  --z-dropdown: 100;
-  --z-overlay:  200;
-  --z-toast:    300;
-
-  /* shadcn-compat vars */
-  --background: var(--bg-base);
-  --foreground: var(--fg-primary);
-  --card: var(--bg-surface);
-  --card-foreground: var(--fg-primary);
-  --muted: var(--bg-elevated);
+  /* shadcn-compat overrides */
+  --background:       var(--bg-base);
+  --foreground:       var(--fg-primary);
+  --card:             var(--bg-surface);
+  --card-foreground:  var(--fg-primary);
+  --muted:            var(--bg-elevated);
   --muted-foreground: var(--fg-muted);
-  --border: rgba(255,255,255,0.08);
-  --input: var(--bg-elevated);
-  --ring: var(--brand);
-  --primary: var(--brand);
-  --primary-foreground: #ffffff;
-  --secondary: var(--bg-elevated);
-  --secondary-foreground: var(--fg-primary);
-  --destructive: hsl(0, 84%, 60%);
-  --destructive-foreground: #ffffff;
-  --popover: var(--bg-surface);
+  --border:           rgba(255,255,255,0.08);
+  --input:            var(--bg-elevated);
+  --popover:          var(--bg-surface);
   --popover-foreground: var(--fg-primary);
+  --bg-page:          var(--bg-base);
 
-  /* Utility */
-  --bg-page: var(--bg-base);
-  --accent:  var(--brand);
+  color-scheme: dark;
 }
 
-/* Light mode */
-[data-theme="light"] {
-  --bg-base:      #ffffff;
-  --bg-surface:   #f5f5f7;
-  --bg-elevated:  #ebebef;
-  --bg-hover:     #e0e0e8;
-  --bg-page:      #ffffff;
-
-  --fg-primary:   #111118;
-  --fg-secondary: #56566a;
-  --fg-muted:     #9090a8;
-
-  --shadow-border: rgba(0,0,0,0.08) 0px 0px 0px 1px;
-  --shadow-card:   rgba(0,0,0,0.08) 0px 0px 0px 1px,
-                   rgba(0,0,0,0.06) 0px 2px 4px,
-                   rgba(0,0,0,0.04) 0px 8px 16px -8px;
-
-  --border:        rgba(0,0,0,0.08);
-  --input:         var(--bg-elevated);
-
-  color-scheme: light;
-}
-
-/* ─── Tailwind v4 @theme ────────────────────────────────────── */
+/* ─── Tailwind v4 @theme ─────────────────────────────────────── */
 @theme inline {
   --font-sans: 'Mona Sans', ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  --color-background:        var(--bg-base);
-  --color-foreground:        var(--fg-primary);
-  --color-card:              var(--bg-surface);
-  --color-card-foreground:   var(--fg-primary);
-  --color-primary:           var(--brand);
+  --color-background:         var(--bg-base);
+  --color-foreground:         var(--fg-primary);
+  --color-card:               var(--bg-surface);
+  --color-card-foreground:    var(--fg-primary);
+  --color-primary:            var(--brand);
   --color-primary-foreground: #ffffff;
-  --color-secondary:         var(--bg-elevated);
+  --color-secondary:          var(--bg-elevated);
   --color-secondary-foreground: var(--fg-primary);
-  --color-muted:             var(--bg-elevated);
-  --color-muted-foreground:  var(--fg-muted);
-  --color-border:            rgba(255,255,255,0.08);
-  --color-input:             var(--bg-elevated);
-  --color-ring:              var(--brand);
-  --color-destructive:       hsl(0, 84%, 60%);
+  --color-muted:              var(--bg-elevated);
+  --color-muted-foreground:   var(--fg-muted);
+  --color-border:             var(--border);
+  --color-input:              var(--bg-elevated);
+  --color-ring:               var(--brand);
+  --color-destructive:        hsl(0, 84%, 60%);
 
-  /* Vercel KI radius scale */
-  --radius-sm:     var(--radius-sm);
-  --radius-btn:    var(--radius-btn);
-  --radius-card:   var(--radius-card);
+  --radius-sm:      var(--radius-sm);
+  --radius-btn:     var(--radius-btn);
+  --radius-card:    var(--radius-card);
   --radius-card-lg: var(--radius-card-lg);
-  --radius-badge:  var(--radius-badge);
+  --radius-badge:   var(--radius-badge);
 }
 
 /* ─── Base ──────────────────────────────────────────────────── */
-*, *::before, *::after {
-  box-sizing: border-box;
-}
+*, *::before, *::after { box-sizing: border-box; }
 
-html {
-  color-scheme: dark;
-}
-[data-theme="light"] html, html[data-theme="light"] {
-  color-scheme: light;
-}
+html { color-scheme: light; }
+[data-theme="dark"] { color-scheme: dark; }
 
 body {
   background-color: var(--bg-base);
@@ -150,15 +161,12 @@ body {
   line-height: 1.5;
 }
 
-/* ─── High Contrast Mode fallback (Vercel KI: RISK-2) ────────── */
+/* ─── High Contrast fallback ─────────────────────────────────── */
 @media (forced-colors: active) {
-  [data-card] {
-    border: 1px solid ButtonBorder !important;
-    box-shadow: none !important;
-  }
+  [data-card] { border: 1px solid ButtonBorder !important; box-shadow: none !important; }
 }
 
-/* ─── prefers-reduced-motion (Vercel KI: RISK-9) ─────────────── */
+/* ─── Reduced motion ────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0ms !important;
@@ -170,11 +178,14 @@ body {
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.12);
   border-radius: 999px;
 }
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.08);
+}
 
-/* ─── Animations (transform/opacity only — Vercel KI) ────────── */
+/* ─── Animations ─────────────────────────────────────────────── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -183,9 +194,7 @@ body {
   0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
   40%           { transform: scale(1);   opacity: 1; }
 }
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 @keyframes shimmer {
   from { background-position: -200% 0; }
   to   { background-position: 200% 0; }
@@ -194,7 +203,7 @@ body {
 .animate-fade-up { animation: fadeUp 0.25s ease-out both; }
 .animate-spin    { animation: spin 0.8s linear infinite; }
 
-/* ─── Skeleton shimmer ──────────────────────────────────────── */
+/* ─── Skeleton ──────────────────────────────────────────────── */
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -206,7 +215,7 @@ body {
   animation: shimmer 1.5s infinite;
 }
 
-/* ─── Typing indicator ─────────────────────────────────────── */
+/* ─── Typing indicator ──────────────────────────────────────── */
 .typing-dot {
   display: inline-block;
   width: 5px; height: 5px;
@@ -217,16 +226,8 @@ body {
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
-/* ─── Gradient text utility ────────────────────────────────── */
-.text-gradient {
-  background: linear-gradient(135deg, var(--brand) 0%, var(--digest-color) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* ─── Module gradient lines ─────────────────────────────────── */
-.gradient-digest   { background: linear-gradient(135deg, var(--digest-color), var(--brand)); }
-.gradient-convo    { background: linear-gradient(135deg, var(--convo-color), hsl(199,89%,48%)); }
-.gradient-budget   { background: linear-gradient(135deg, var(--budget-color), hsl(24,95%,53%)); }
-.gradient-brand    { background: linear-gradient(135deg, var(--brand), var(--digest-color)); }
+/* ─── Module gradients ──────────────────────────────────────── */
+.gradient-digest { background: linear-gradient(135deg, hsl(271,91%,65%), hsl(239,84%,67%)); }
+.gradient-convo  { background: linear-gradient(135deg, hsl(160,84%,42%), hsl(199,89%,48%)); }
+.gradient-budget { background: linear-gradient(135deg, hsl(38,92%,52%),  hsl(24,95%,53%)); }
+.gradient-brand  { background: linear-gradient(135deg, hsl(239,84%,67%), hsl(271,91%,65%)); }
