@@ -1,65 +1,125 @@
-import Image from "next/image";
+// app/page.tsx — Dashboard Homepage
+import { Newspaper, MessageCircle, Wallet, ArrowRight, Zap } from "lucide-react";
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
-export default function Home() {
+const MODULES = [
+  {
+    href: "/tech-digest",
+    icon: Newspaper,
+    title: "Tech Digest",
+    description: "Tổng hợp công nghệ nổi bật 2 lần/tuần do AI tự phân tích và viết.",
+    badge: "AI · 2x/tuần",
+    badgeVariant: "digest" as const,
+    accent: "var(--digest-color)",
+    gradientClass: "gradient-digest",
+    id: "module-tech-digest",
+  },
+  {
+    href: "/conversation",
+    icon: MessageCircle,
+    title: "Luyện Giao Tiếp",
+    description: "Chat với AI để luyện tiếng Anh và tiếng Nhật theo tình huống thực tế.",
+    badge: "EN · JP",
+    badgeVariant: "conversation" as const,
+    accent: "var(--convo-color)",
+    gradientClass: "gradient-convo",
+    id: "module-conversation",
+  },
+  {
+    href: "/budget",
+    icon: Wallet,
+    title: "Phân Bổ Ngân Sách",
+    description: "Tính toán và phân bổ thu nhập theo 6 hạng mục theo tỷ lệ cố định.",
+    badge: "6 hạng mục",
+    badgeVariant: "budget" as const,
+    accent: "var(--budget-color)",
+    gradientClass: "gradient-budget",
+    id: "module-budget",
+  },
+];
+
+export default function DashboardPage() {
+  const now = new Date();
+  const dateStr = new Intl.DateTimeFormat("vi-VN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(now);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="px-8 py-10 max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="mb-10 animate-fade-up">
+        <div className="flex items-center gap-2 mb-3">
+          <Zap className="w-4 h-4 text-[var(--brand)]" aria-hidden="true" />
+          <span className="text-[12px] font-[500] text-[var(--fg-muted)] uppercase tracking-[0.08em]">
+            {dateStr}
+          </span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        <h1
+          className="text-[40px] font-[600] leading-[1.20] tracking-[-0.05em] text-[var(--fg-primary)] mb-3"
+        >
+          Xin chào 👋
+        </h1>
+        <p className="text-[18px] font-[400] leading-[1.56] text-[var(--fg-secondary)] max-w-xl">
+          Không gian cá nhân để học, phát triển và quản lý cuộc sống hiệu quả hơn.
+        </p>
+      </div>
+
+      {/* Module cards */}
+      <div className="space-y-4">
+        {MODULES.map((mod, i) => {
+          const Icon = mod.icon;
+          return (
+            <Link key={mod.href} href={mod.href} id={mod.id} className="block group">
+              <Card
+                featured
+                className={`
+                  p-0 overflow-hidden
+                  transition-[box-shadow,transform] duration-[150ms] ease
+                  hover:translate-y-[-1px]
+                  animate-fade-up
+                `}
+                style={{ animationDelay: `${i * 80}ms` }}
+              >
+                <CardContent className="p-6 flex items-center gap-5">
+                  {/* Icon accent box */}
+                  <div
+                    className={`
+                      w-12 h-12 rounded-[8px] flex items-center justify-center shrink-0
+                      ${mod.gradientClass}
+                    `}
+                  >
+                    <Icon className="w-6 h-6 text-white" aria-hidden="true" />
+                  </div>
+
+                  {/* Text */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h2 className="text-[18px] font-[600] leading-[1.33] tracking-[-0.02em] text-[var(--fg-primary)]">
+                        {mod.title}
+                      </h2>
+                      <Badge variant={mod.badgeVariant}>{mod.badge}</Badge>
+                    </div>
+                    <p className="text-[14px] font-[400] leading-[1.5] text-[var(--fg-secondary)]">
+                      {mod.description}
+                    </p>
+                  </div>
+
+                  {/* Arrow */}
+                  <ArrowRight
+                    className="w-5 h-5 text-[var(--fg-muted)] shrink-0 transition-transform duration-[150ms] group-hover:translate-x-1"
+                    aria-hidden="true"
+                  />
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 }
