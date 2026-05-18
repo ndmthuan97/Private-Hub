@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, RotateCcw, RefreshCw, ArrowLeft } from "lucide-react";
+import { Send, RotateCcw, RefreshCw, ArrowLeft, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -373,7 +373,7 @@ export default function ConversationPage() {
           <button id="btn-send-message" onClick={sendMessage}
             disabled={sending || !input.trim()} aria-label="Gửi tin nhắn"
             className="flex h-11 w-11 items-center justify-center rounded-[8px] bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 shrink-0">
-            <Send className="w-4 h-4" />
+            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
         </div>
         <p className="text-center text-[11px] text-[#bbb] mt-2">Enter để gửi · Shift+Enter xuống dòng</p>

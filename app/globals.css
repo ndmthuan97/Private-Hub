@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 /* ── Tailwind dark: variant — maps to data-theme="dark" on <html> ── */
 @custom-variant dark (&:is([data-theme="dark"] *));

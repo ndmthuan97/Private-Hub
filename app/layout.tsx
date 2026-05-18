@@ -33,12 +33,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <main className="flex-1 min-w-0 overflow-y-auto">{children}</main>
         <Toaster
           position="bottom-right"
+          richColors
+          closeButton
           toastOptions={{
             style: {
-              background: "var(--bg-elevated)",
-              border: "none",
-              boxShadow: "var(--shadow-card)",
-              color: "var(--fg-primary)",
               fontSize: "13px",
             },
           }}

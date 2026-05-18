@@ -34,7 +34,21 @@ export const budgetEntries = pgTable("budget_entries", {
   unique("budget_entries_month_year_unique").on(t.month, t.year),
 ]);
 
+// ─── Roadmap ──────────────────────────────────────────────────
+
+export const roadmaps = pgTable("roadmaps", {
+  id:        uuid("id").primaryKey().defaultRandom(),
+  title:     text("title").notNull(),
+  type:      text("type").notNull().default("markdown"), // "markdown" | "embed"
+  content:   text("content").notNull().default(""),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ─── Types ────────────────────────────────────────────────────
+export type Roadmap    = typeof roadmaps.$inferSelect;
+export type NewRoadmap = typeof roadmaps.$inferInsert;
 export type BudgetCategory  = typeof budgetCategories.$inferSelect;
 export type NewBudgetCategory = typeof budgetCategories.$inferInsert;
 export type BudgetEntry     = typeof budgetEntries.$inferSelect;

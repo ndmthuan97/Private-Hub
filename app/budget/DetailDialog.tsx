@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { Check, Pencil, Trash2, X, AlertTriangle } from "lucide-react";
+import { Check, Pencil, Trash2, X, AlertTriangle, Loader2 } from "lucide-react";
 import { formatVND } from "@/lib/utils";
 
 export interface Allocation {
@@ -225,7 +225,8 @@ export function DetailDialog({
           </div>
           <button onClick={save} disabled={saving}
             className="flex items-center gap-1.5 h-9 px-4 rounded-[6px] text-[13px] font-medium bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40">
-            <Check className="w-3.5 h-3.5" />{saving ? "Đang lưu..." : "Lưu chi tiêu"}
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+            {saving ? "Đang lưu..." : "Lưu chi tiêu"}
           </button>
         </div>
       </div>

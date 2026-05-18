@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import type { Category } from "./page";
 import { formatVND } from "@/lib/utils";
-import { Plus, Search, X, Check } from "lucide-react";
+import { Plus, Search, X, Check, Loader2 } from "lucide-react";
 import { DetailDialog, EditDialog, type Entry, type Allocation } from "./DetailDialog";
 
 const MONTHS = ["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6",
@@ -138,7 +138,8 @@ export function EntryManager({ categories }: { categories: Category[] }) {
                 style={{ boxShadow: "var(--shadow-border)" }}>Hủy</button>
               <button onClick={handleSave} disabled={saving}
                 className="h-10 rounded-[7px] text-[14px] font-medium flex items-center justify-center gap-1.5 bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40">
-                <Check className="w-4 h-4" />{saving ? "Đang lưu..." : "Lưu"}
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              {saving ? "Đang lưu..." : "Lưu"}
               </button>
             </div>
           </div>

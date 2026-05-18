@@ -12,7 +12,7 @@ export function getDb() {
   if (!url) throw new Error("DATABASE_URL is not set in environment variables");
 
   // postgres-js client — connection pooling disabled for serverless (Vercel)
-  const client = postgres(url, { prepare: false });
+  const client = postgres(url, { prepare: false, max: 1 });
   _db = drizzle(client, { schema });
   return _db;
 }
