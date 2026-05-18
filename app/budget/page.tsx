@@ -28,7 +28,7 @@ export default function BudgetPage() {
   return (
     <div className="px-4 py-6 space-y-4">
       {/* Header + Tabs inline */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-[20px] font-semibold tracking-tight text-[#171717] dark:text-[#f5f5f5]">
           Phân Bổ Ngân Sách
         </h1>

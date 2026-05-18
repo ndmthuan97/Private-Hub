@@ -17,7 +17,7 @@ export default function CalendarPage() {
           className="flex items-center gap-1.5 h-8 px-3 rounded-[6px] text-[12px] font-medium text-[#666] dark:text-[#888] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] transition-colors"
           style={{ boxShadow: "var(--shadow-border)" }}>
           <ExternalLink className="w-3.5 h-3.5" />
-          Mở để thêm sự kiện
+          Mở Google Calendar
         </a>
       </div>
       <iframe src={EMBED_URL} className="flex-1 w-full border-0" title="Google Calendar" />

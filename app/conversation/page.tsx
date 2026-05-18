@@ -54,8 +54,10 @@ const PERSONAS: { id: Persona; label: string; desc: string; icon: string }[] = [
   { id: "business", label: "Đồng nghiệp",  desc: "Chuyên nghiệp, formal, đúng ngữ cảnh",      icon: "💼" },
 ];
 
-function pickRandom<T>(arr: T[], n: number): T[] {
-  return [...arr].sort(() => Math.random() - 0.5).slice(0, n);
+function pickRandom<T>(arr: T[], n: number, exclude: T[] = []): T[] {
+  const pool = arr.filter(x => !exclude.includes(x));
+  const source = pool.length >= n ? pool : arr;
+  return [...source].sort(() => Math.random() - 0.5).slice(0, n);
 }
 
 function parseReply(raw: string): { main: string; correction: string | null } {
@@ -152,6 +154,7 @@ export default function ConversationPage() {
   const [jlptLevel, setJlptLevel]             = useState<JlptLevel>("N4");
   const [selectedTopic, setSelectedTopic]     = useState<Topic | null>(null);
   const [suggestedTopics, setSuggestedTopics] = useState<Topic[]>([]);
+  const shownTopicsRef = useRef<Topic[]>([]);
   const [messages, setMessages]               = useState<Message[]>([]);
   const [input, setInput]                     = useState("");
   const [sending, setSending]                 = useState(false);
@@ -162,12 +165,18 @@ export default function ConversationPage() {
 
   function selectLanguage(lang: Language) {
     setLanguage(lang);
-    setSuggestedTopics(pickRandom(lang === "en" ? TOPIC_POOL_EN : TOPIC_POOL_JP, 6));
+    shownTopicsRef.current = [];
+    const picked = pickRandom(lang === "en" ? TOPIC_POOL_EN : TOPIC_POOL_JP, 6);
+    shownTopicsRef.current = picked;
+    setSuggestedTopics(picked);
     setStep("topic");
   }
 
   function refreshTopics() {
-    setSuggestedTopics(pickRandom(language === "en" ? TOPIC_POOL_EN : TOPIC_POOL_JP, 6));
+    const pool = language === "en" ? TOPIC_POOL_EN : TOPIC_POOL_JP;
+    const picked = pickRandom(pool, 6, shownTopicsRef.current);
+    shownTopicsRef.current = [...shownTopicsRef.current, ...picked];
+    setSuggestedTopics(picked);
   }
 
   function selectTopic(topic: Topic) {

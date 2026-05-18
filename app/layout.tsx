@@ -30,7 +30,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       </head>
       <body className="font-sans antialiased min-h-screen flex bg-[var(--bg-base)]" suppressHydrationWarning>
         <Sidebar />
-        <main className="flex-1 min-w-0 overflow-y-auto">{children}</main>
+        <main className="flex-1 min-w-0 overflow-y-auto pt-14 md:pt-0">{children}</main>
         <Toaster
           position="bottom-right"
           richColors

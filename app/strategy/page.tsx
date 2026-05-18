@@ -4,11 +4,28 @@ import { createPortal } from "react-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
-import { Plus, X, Check, Loader2, Pencil, Trash2, FileText, Link2, ExternalLink, ArrowLeft } from "lucide-react";
+import { Plus, X, Check, Loader2, Pencil, Trash2, FileText, Link2, ExternalLink, ArrowLeft, Eye, Wand2, ClipboardPaste } from "lucide-react";
 import type { Roadmap } from "@/db/schema";
 
 type FormState = { title: string; type: "markdown" | "embed"; content: string };
 const EMPTY: FormState = { title: "", type: "markdown", content: "" };
+
+function convertToMarkdown(raw: string): string {
+  return raw
+    .split("\n")
+    .map(line => {
+      // "**N. Title**" or "**Title**" as standalone lines → ## heading
+      const headingMatch = line.match(/^\*\*(\d+\.\s+.+?)\*\*\s*$/) || line.match(/^\*\*(.+?)\*\*\s*$/);
+      if (headingMatch) return `## ${headingMatch[1].replace(/:$/, "").trim()}`;
+      // nested bullet "    *   text" → "    - text"
+      if (/^    \*   /.test(line)) return line.replace(/^    \*   /, "    - ");
+      // top-level bullet "*   text" → "- text"
+      if (/^\*   /.test(line)) return line.replace(/^\*   /, "- ");
+      return line;
+    })
+    .join("\n")
+    .trim();
+}
 
 function detectFileType(url: string): { label: string; color: string; bg: string } {
   try {
@@ -27,12 +44,12 @@ function detectFileType(url: string): { label: string; color: string; bg: string
   } catch { return { label: "URL", color: "#666", bg: "bg-gray-100 dark:bg-gray-800/40" }; }
 }
 
-function Badge({ type, url }: { type: string; url?: string }) {
+function TypeBadge({ type, url }: { type: string; url?: string }) {
   if (type === "embed" && url) {
     const { label, color, bg } = detectFileType(url);
-    return <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${bg}`} style={{ color }}>{label}</span>;
+    return <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${bg}`} style={{ color }}>{label}</span>;
   }
-  return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/30 text-purple-500 font-medium">Markdown</span>;
+  return <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/30 text-purple-500 font-medium whitespace-nowrap">Markdown</span>;
 }
 
 /* ── Form dialog ───────────────────────────────────────────── */
@@ -42,8 +59,18 @@ function FormDialog({ initial, onClose, onSaved }: {
   const [form, setForm] = useState<FormState>(
     initial ? { title: initial.title, type: initial.type as "markdown" | "embed", content: initial.content } : EMPTY,
   );
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]       = useState(false);
+  const [pasteMode, setPasteMode] = useState(false);
+  const [rawText, setRawText]     = useState("");
   const isEdit = !!initial;
+
+  function handleConvert() {
+    const md = convertToMarkdown(rawText);
+    setForm(f => ({ ...f, content: md }));
+    setPasteMode(false);
+    setRawText("");
+    toast.success("Đã chuyển đổi sang Markdown");
+  }
 
   async function handleSave() {
     if (!form.title.trim()) { toast.error("Nhập tiêu đề"); return; }
@@ -54,7 +81,7 @@ function FormDialog({ initial, onClose, onSaved }: {
       const method = isEdit ? "PUT" : "POST";
       const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
       const j = await r.json();
-      if (r.ok) { toast.success(isEdit ? "✅ Đã cập nhật" : "✅ Đã thêm"); onSaved(); }
+      if (r.ok) { toast.success(isEdit ? "Đã cập nhật" : "Đã thêm"); onSaved(); }
       else toast.error(j.message ?? "Lỗi");
     } catch { toast.error("Lỗi kết nối"); }
     finally { setSaving(false); }
@@ -98,13 +125,45 @@ function FormDialog({ initial, onClose, onSaved }: {
             </div>
           </div>
           <div>
-            <label className="text-[11px] font-medium uppercase tracking-widest text-[#999] mb-1.5 block">
-              {form.type === "markdown" ? "Nội dung (Markdown)" : "URL nhúng"}
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] font-medium uppercase tracking-widest text-[#999]">
+                {form.type === "markdown" ? "Nội dung (Markdown)" : "URL nhúng"}
+              </label>
+              {form.type === "markdown" && (
+                <button type="button" onClick={() => { setPasteMode(p => !p); setRawText(""); }}
+                  className={`flex items-center gap-1.5 h-6 px-2.5 rounded-[5px] text-[11px] font-medium transition-all cursor-pointer ${pasteMode ? "bg-amber-500 text-white" : "text-[#888] hover:text-[#171717] dark:hover:text-[#f5f5f5]"}`}
+                  style={pasteMode ? undefined : { boxShadow: "var(--shadow-border)" }}>
+                  <ClipboardPaste className="w-3 h-3" />
+                  {pasteMode ? "Huỷ dán" : "Dán văn bản"}
+                </button>
+              )}
+            </div>
+
+            {/* Paste & convert panel */}
+            {form.type === "markdown" && pasteMode && (
+              <div className="mb-3 rounded-[8px] border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-amber-200 dark:border-amber-800">
+                  <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400">Dán văn bản thô vào đây — sẽ tự chuyển sang Markdown</span>
+                  <button type="button" onClick={handleConvert} disabled={!rawText.trim()}
+                    className="flex items-center gap-1.5 h-6 px-3 rounded-[5px] text-[11px] font-semibold bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-40 cursor-pointer transition-colors">
+                    <Wand2 className="w-3 h-3" />Chuyển đổi
+                  </button>
+                </div>
+                <textarea
+                  autoFocus
+                  placeholder="Dán nội dung vào đây..."
+                  value={rawText}
+                  onChange={e => setRawText(e.target.value)}
+                  rows={8}
+                  className="w-full px-3 py-2.5 text-[12px] bg-transparent text-[#333] dark:text-[#ddd] resize-none leading-relaxed outline-none"
+                />
+              </div>
+            )}
+
             {form.type === "markdown" ? (
               <textarea placeholder={"# Tiêu đề\n\n## Giai đoạn 1\n- [ ] Bước 1\n- [ ] Bước 2"}
                 value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
-                rows={14}
+                rows={pasteMode ? 6 : 14}
                 className="w-full px-3 py-2.5 text-[13px] font-mono rounded-[7px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5] resize-none leading-relaxed"
                 style={{ boxShadow: "var(--shadow-border)" }} />
             ) : (
@@ -152,7 +211,7 @@ function DetailView({ item, onBack, onEdit, onDelete }: {
           <ArrowLeft className="w-3.5 h-3.5" />Quay lại
         </button>
         <div className="flex-1 min-w-0 flex items-center gap-2">
-          <Badge type={item.type} url={item.content} />
+          <TypeBadge type={item.type} url={item.content} />
           <span className="text-[15px] font-semibold text-[#171717] dark:text-[#f5f5f5] truncate">{item.title}</span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -196,6 +255,96 @@ function DetailView({ item, onBack, onEdit, onDelete }: {
   );
 }
 
+/* ── Table row ─────────────────────────────────────────────── */
+function StrategyRow({ item, onView, onEdit, onDelete }: {
+  item: Roadmap;
+  onView: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const [deleting, setDeleting] = useState(false);
+
+  function handleDelete() {
+    toast.warning(`Xóa "${item.title}"?`, {
+      action: {
+        label: "Xóa",
+        onClick: async () => {
+          setDeleting(true);
+          await onDelete();
+        },
+      },
+      cancel: { label: "Hủy", onClick: () => {} },
+      duration: 5000,
+    });
+  }
+
+  const preview = item.type === "embed"
+    ? item.content
+    : item.content.replace(/^#+\s*/gm, "").replace(/\*\*|__|\*|_|`/g, "").slice(0, 120);
+
+  const date = new Date(item.createdAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+  const actions = (
+    <div className="flex items-center gap-1 shrink-0">
+      <button onClick={onView}
+        className="flex h-7 w-7 items-center justify-center rounded-[4px] text-[#999] hover:text-blue-500 transition-colors cursor-pointer"
+        style={{ boxShadow: "var(--shadow-border)" }}>
+        <Eye className="w-3.5 h-3.5" />
+      </button>
+      <button onClick={onEdit}
+        className="flex h-7 w-7 items-center justify-center rounded-[4px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
+        style={{ boxShadow: "var(--shadow-border)" }}>
+        <Pencil className="w-3.5 h-3.5" />
+      </button>
+      <button onClick={handleDelete} disabled={deleting}
+        className="flex h-7 w-7 items-center justify-center rounded-[4px] text-[#999] hover:text-red-500 transition-colors cursor-pointer disabled:opacity-40"
+        style={{ boxShadow: "var(--shadow-border)" }}>
+        {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="rounded-[8px] bg-white dark:bg-[#111] overflow-hidden"
+      style={{ boxShadow: "var(--shadow-card)" }}>
+
+      {/* Mobile card */}
+      <div className="flex items-center gap-3 px-4 py-3 md:hidden">
+        <div className="shrink-0 w-7 h-7 rounded-[6px] flex items-center justify-center bg-[#f5f5f5] dark:bg-[#1a1a1a]">
+          {item.type === "embed" ? <Link2 className="w-3.5 h-3.5 text-[#999]" /> : <FileText className="w-3.5 h-3.5 text-[#999]" />}
+        </div>
+        <button onClick={onView} className="flex-1 min-w-0 text-left cursor-pointer group">
+          <span className="text-[13px] font-medium text-[#171717] dark:text-[#f5f5f5] truncate block group-hover:text-blue-500 transition-colors">
+            {item.title}
+          </span>
+          <div className="mt-1 flex items-center gap-2">
+            <TypeBadge type={item.type} url={item.content} />
+            <span className="text-[11px] text-[#bbb] tabular-nums">{date}</span>
+          </div>
+        </button>
+        {actions}
+      </div>
+
+      {/* Desktop grid row */}
+      <div className="hidden md:grid items-center gap-3 px-5 py-3"
+        style={{ gridTemplateColumns: "28px 2fr 120px 3fr 90px 88px" }}>
+        <div className="w-7 h-7 rounded-[6px] flex items-center justify-center bg-[#f5f5f5] dark:bg-[#1a1a1a]">
+          {item.type === "embed" ? <Link2 className="w-3.5 h-3.5 text-[#999]" /> : <FileText className="w-3.5 h-3.5 text-[#999]" />}
+        </div>
+        <button onClick={onView} className="text-left min-w-0 cursor-pointer group">
+          <span className="text-[13px] font-medium text-[#171717] dark:text-[#f5f5f5] truncate block group-hover:text-blue-500 transition-colors">
+            {item.title}
+          </span>
+        </button>
+        <div className="min-w-0"><TypeBadge type={item.type} url={item.content} /></div>
+        <span className="text-[12px] text-[#999] truncate min-w-0">{preview}</span>
+        <span className="text-[11px] text-[#bbb] tabular-nums">{date}</span>
+        <div className="flex items-center gap-1 justify-end">{actions}</div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main page ─────────────────────────────────────────────── */
 export default function StrategyPage() {
   const [items, setItems]       = useState<Roadmap[]>([]);
@@ -220,7 +369,7 @@ export default function StrategyPage() {
 
   async function handleDelete(item: Roadmap) {
     await fetch(`/api/strategy/${item.id}`, { method: "DELETE" });
-    toast.success("🗑️ Đã xóa");
+    toast.success("Đã xóa");
     setSelected(null);
     load();
   }
@@ -242,14 +391,17 @@ export default function StrategyPage() {
   }
 
   return (
-    <div className="px-6 py-5 space-y-5 max-w-5xl mx-auto">
+    <div className="px-6 py-5 space-y-5">
       {typeof window !== "undefined" && addOpen && (
         <FormDialog onClose={() => setAddOpen(false)} onSaved={() => { setAddOpen(false); load(); }} />
       )}
+      {typeof window !== "undefined" && edit && (
+        <FormDialog initial={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load(); }} />
+      )}
 
+      {/* Header */}
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-widest text-[#999]">Quản lý</p>
           <h1 className="text-[22px] font-bold tracking-tight text-[#171717] dark:text-[#f5f5f5] mt-0.5">Strategy</h1>
         </div>
         <button onClick={() => setAddOpen(true)}
@@ -259,33 +411,38 @@ export default function StrategyPage() {
       </div>
 
       {loading ? (
-        <div className="py-16 text-center text-[13px] text-[#999]">Đang tải...</div>
+        <div className="space-y-2">
+          {[1, 2, 3].map(n => (
+            <div key={n} className="h-14 rounded-[8px] bg-[#f5f5f5] dark:bg-[#1a1a1a] animate-pulse" />
+          ))}
+        </div>
       ) : items.length === 0 ? (
         <div className="py-16 text-center">
           <p className="text-[15px] font-medium text-[#999]">Chưa có mục nào</p>
           <p className="text-[13px] text-[#bbb] mt-1">Bấm "+ Thêm mới" để bắt đầu</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="space-y-2">
+          {/* Table header — desktop only */}
+          <div className="hidden md:grid items-center gap-3 px-5 py-1"
+            style={{ gridTemplateColumns: "28px 2fr 120px 3fr 90px 88px" }}>
+            <div />
+            <span className="text-[11px] font-medium uppercase tracking-widest text-[#999]">Tiêu đề</span>
+            <span className="text-[11px] font-medium uppercase tracking-widest text-[#999]">Loại</span>
+            <span className="text-[11px] font-medium uppercase tracking-widest text-[#999]">Nội dung</span>
+            <span className="text-[11px] font-medium uppercase tracking-widest text-[#999]">Ngày tạo</span>
+            <div />
+          </div>
+
+          {/* Rows */}
           {items.map(item => (
-            <button key={item.id} onClick={() => setSelected(item)}
-              className="text-left rounded-[10px] bg-white dark:bg-[#111] px-4 py-4 hover:shadow-md transition-all cursor-pointer group"
-              style={{ boxShadow: "var(--shadow-card)" }}>
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <Badge type={item.type} url={item.content} />
-                {item.type === "embed"
-                  ? <Link2    className="w-4 h-4 text-[#ddd] dark:text-[#333] shrink-0 group-hover:text-blue-400 transition-colors" />
-                  : <FileText className="w-4 h-4 text-[#ddd] dark:text-[#333] shrink-0 group-hover:text-purple-400 transition-colors" />}
-              </div>
-              <p className="text-[15px] font-semibold text-[#171717] dark:text-[#f5f5f5] leading-snug line-clamp-2">
-                {item.title}
-              </p>
-              {item.type === "markdown" && item.content && (
-                <p className="text-[12px] text-[#999] mt-1.5 line-clamp-2 leading-relaxed">
-                  {item.content.replace(/^#+\s*/gm, "").slice(0, 120)}
-                </p>
-              )}
-            </button>
+            <StrategyRow
+              key={item.id}
+              item={item}
+              onView={() => setSelected(item)}
+              onEdit={() => setEdit(item)}
+              onDelete={() => handleDelete(item)}
+            />
           ))}
         </div>
       )}

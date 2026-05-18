@@ -150,21 +150,21 @@ export function EntryManager({ categories }: { categories: Category[] }) {
       {/* Table */}
       <div className="rounded-[8px] bg-white dark:bg-[#111] overflow-hidden"
         style={{ boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between gap-3 px-5 py-3"
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-5 py-3"
           style={{ boxShadow: "rgba(0,0,0,0.06) 0px 1px 0px 0px" }}>
           <p className="text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888]">
             Lịch sử phân bổ
           </p>
           <div className="flex items-center gap-2">
-            <div className="relative">
+            <div className="relative flex-1 sm:flex-none">
               <Search className="absolute left-2 top-1.5 w-3.5 h-3.5 text-[#bbb] pointer-events-none" />
               <input type="text" placeholder="Tìm tháng/năm..."
                 value={search} onChange={e => setSearch(e.target.value)}
-                className="h-7 pl-7 pr-3 w-36 text-[12px] rounded-[5px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5]"
+                className="h-7 pl-7 pr-3 w-full sm:w-36 text-[12px] rounded-[5px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5]"
                 style={{ boxShadow: "var(--shadow-border)" }} />
             </div>
             <button onClick={() => setAddOpen(true)}
-              className="h-7 px-3 rounded-[5px] text-[12px] font-medium flex items-center gap-1 bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer">
+              className="h-7 px-3 rounded-[5px] text-[12px] font-medium flex items-center gap-1 bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer shrink-0">
               <Plus className="w-3 h-3" />Thêm phân bổ
             </button>
           </div>

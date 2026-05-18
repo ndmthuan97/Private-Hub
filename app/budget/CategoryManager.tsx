@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import type { Category } from "./page";
 import { Plus, Trash2, Save, X, Pencil, Check, Loader2, Sparkles } from "lucide-react";
@@ -13,59 +14,73 @@ const BASIC_COLORS = [
 
 interface EditState { label: string; emoji: string; color: string; percentage: string; }
 
-/* ── Inline Color Picker ──────────────────────────────────────── */
+/* ── Color Picker Dialog ──────────────────────────────────────── */
 function ColorDot({ value, onChange }: { value: string; onChange: (c: string) => void }) {
   const [open, setOpen] = useState(false);
   const [hex, setHex]   = useState(value);
-  const ref             = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setHex(value); }, [value]);
 
-  useEffect(() => {
-    function onClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, []);
-
   function pick(c: string) { onChange(c); setHex(c); }
 
+  const dialog = open && typeof document !== "undefined" && createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center"
+      onMouseDown={e => { if (e.target === e.currentTarget) setOpen(false); }}>
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+      {/* Panel */}
+      <div className="relative rounded-2xl bg-white dark:bg-[#1a1a1a] p-5 space-y-4 w-64 shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <span className="text-[13px] font-semibold text-[#171717] dark:text-[#f5f5f5]">Chọn màu</span>
+          <button type="button" onClick={() => setOpen(false)}
+            className="w-6 h-6 flex items-center justify-center rounded-full text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] hover:bg-[#f0f0f0] dark:hover:bg-[#2a2a2a] transition-colors cursor-pointer">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Swatches */}
+        <div className="grid grid-cols-6 gap-2">
+          {BASIC_COLORS.map(c => (
+            <button key={c} type="button" onClick={() => pick(c)}
+              className={cn(
+                "w-8 h-8 rounded-full cursor-pointer hover:scale-110 transition-transform",
+                value === c && "ring-2 ring-offset-2 ring-[#171717] dark:ring-[#f5f5f5]"
+              )}
+              style={{ background: c }} />
+          ))}
+        </div>
+
+        {/* Hex input */}
+        <div className="flex items-center gap-2 pt-1 border-t border-[#f0f0f0] dark:border-[#333]">
+          <div className="w-6 h-6 rounded-full shrink-0 border border-[#e2e2e2] dark:border-[#333]" style={{ background: value }} />
+          <input value={hex}
+            onChange={e => {
+              const v = e.target.value;
+              setHex(v);
+              if (/^#[0-9a-f]{6}$/i.test(v)) pick(v);
+            }}
+            placeholder="#6366f1" maxLength={7}
+            className="flex-1 h-7 px-2 text-[12px] font-mono rounded-[6px] bg-[#f5f5f5] dark:bg-[#111] text-[#171717] dark:text-[#f5f5f5]"
+            style={{ boxShadow: "var(--shadow-border)" }} />
+        </div>
+
+        {/* Confirm */}
+        <button type="button" onClick={() => setOpen(false)}
+          className="w-full h-8 rounded-[6px] text-[12px] font-medium bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 cursor-pointer transition-opacity">
+          Xác nhận
+        </button>
+      </div>
+    </div>,
+    document.body
+  );
+
   return (
-    <div ref={ref} className="relative shrink-0">
-      <button type="button" onClick={() => setOpen(o => !o)}
+    <div className="shrink-0">
+      <button type="button" onClick={() => setOpen(true)}
         className="w-7 h-7 rounded-full border-2 border-white dark:border-[#222] shadow cursor-pointer hover:scale-110 transition-transform"
         style={{ background: value }} />
-
-      {open && (
-        <div className="absolute z-50 top-9 right-0 rounded-[10px] bg-white dark:bg-[#1a1a1a] p-3 space-y-2.5 w-[176px]"
-          style={{ boxShadow: "var(--shadow-card)" }}>
-          {/* Swatches */}
-          <div className="grid grid-cols-6 gap-1.5">
-            {BASIC_COLORS.map(c => (
-              <button key={c} type="button" onClick={() => pick(c)}
-                className={cn(
-                  "w-6 h-6 rounded-full cursor-pointer hover:scale-110 transition-transform",
-                  value === c && "ring-2 ring-offset-1 ring-[#171717] dark:ring-[#f5f5f5]"
-                )}
-                style={{ background: c }} />
-            ))}
-          </div>
-          {/* Hex input */}
-          <div className="flex items-center gap-2 pt-1 border-t border-[#f0f0f0] dark:border-[#333]">
-            <div className="w-5 h-5 rounded-full shrink-0" style={{ background: value }} />
-            <input value={hex}
-              onChange={e => {
-                const v = e.target.value;
-                setHex(v);
-                if (/^#[0-9a-f]{6}$/i.test(v)) pick(v);
-              }}
-              placeholder="#6366f1" maxLength={7}
-              className="flex-1 h-6 px-2 text-[11px] font-mono rounded-[4px] bg-[#f5f5f5] dark:bg-[#111] text-[#171717] dark:text-[#f5f5f5]"
-              style={{ boxShadow: "var(--shadow-border)" }} />
-          </div>
-        </div>
-      )}
+      {dialog}
     </div>
   );
 }

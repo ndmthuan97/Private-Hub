@@ -164,14 +164,14 @@ export function DetailDialog({
           </div>
         </div>
 
-        {/* Chart left + Tracker right */}
-        <div className="flex items-stretch" style={{ boxShadow: "rgba(0,0,0,0.04) 0px 1px 0px 0px" }}>
-          {/* Left: Hex chart */}
-          <div className="w-[420px] shrink-0 p-2 flex items-center justify-center border-r border-[#f0f0f0] dark:border-[#222]">
+        {/* Chart + Tracker: stacked on mobile, side-by-side on desktop */}
+        <div className="flex flex-col md:flex-row md:items-stretch" style={{ boxShadow: "rgba(0,0,0,0.04) 0px 1px 0px 0px" }}>
+          {/* Chart */}
+          <div className="w-full md:w-[420px] md:shrink-0 p-2 flex items-center justify-center md:border-r border-b md:border-b-0 border-[#f0f0f0] dark:border-[#222]">
             <HexChart allocs={allocs} />
           </div>
 
-          {/* Right: Tracker */}
+          {/* Tracker */}
           <div className="flex-1 px-4 py-3 min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-[#999] mb-2.5">Theo dõi chi tiêu</p>
             <div className="space-y-3">
@@ -187,9 +187,9 @@ export function DetailDialog({
                       <input type="text" inputMode="numeric" placeholder="0"
                         value={spent[a.key] ?? ""}
                         onChange={e => setSpent(s => ({ ...s, [a.key]: e.target.value }))}
-                        className="w-28 h-7 px-2 text-[12px] text-right rounded-[5px] tabular-nums bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5]"
+                        className="w-20 sm:w-28 h-7 px-2 text-[12px] text-right rounded-[5px] tabular-nums bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5]"
                         style={{ boxShadow: "var(--shadow-border)" }} />
-                      <div className="w-28 shrink-0 flex items-center justify-end">
+                      <div className="w-20 sm:w-28 shrink-0 flex items-center justify-end">
                         {done ? (
                           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-500">
                             <Check className="w-3.5 h-3.5" />
