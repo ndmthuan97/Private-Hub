@@ -65,6 +65,7 @@ function detectFileType(url: string): { label: string; color: string; bg: string
       if (url.includes("/presentation/")) return { label: "Google Slides", color: "#ea580c", bg: "bg-orange-50 dark:bg-orange-950/30" };
       return { label: "Google Drive", color: "#2563eb", bg: "bg-blue-50 dark:bg-blue-950/30" };
     }
+    if (h === "drive.google.com") return { label: "Google Drive", color: "#2563eb", bg: "bg-blue-50 dark:bg-blue-950/30" };
     if (h.includes("youtube.com") || h === "youtu.be") return { label: "YouTube",  color: "#dc2626", bg: "bg-red-50 dark:bg-red-950/30" };
     if (h.includes("notion.so"))  return { label: "Notion",  color: "#555",    bg: "bg-gray-100 dark:bg-gray-800/40" };
     if (h.includes("figma.com"))  return { label: "Figma",   color: "#a855f7", bg: "bg-purple-50 dark:bg-purple-950/30" };
