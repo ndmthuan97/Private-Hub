@@ -1,13 +1,7 @@
-// components/ui/card.tsx
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-/**
- * Vercel KI:
- * - NO CSS border. Use shadow-as-border only.
- * - radius: 8px (card), 12px (card-lg/featured)
- * - forced-colors fallback via data-card attribute
- */
+// No CSS border — shadow-as-border only. data-card enables forced-colors fallback.
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { featured?: boolean }
@@ -43,7 +37,6 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      // Vercel KI: Card Title = 24px, weight 600, letter-spacing -0.04em
       "text-[24px] font-[600] leading-[1.33] tracking-[-0.04em] text-[var(--fg-primary)]",
       className
     )}

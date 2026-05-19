@@ -139,7 +139,6 @@ function FormDialog({ initial, onClose, onSaved }: {
               )}
             </div>
 
-            {/* Paste & convert panel */}
             {form.type === "markdown" && pasteMode && (
               <div className="mb-3 rounded-[8px] border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 overflow-hidden">
                 <div className="flex items-center justify-between px-3 py-2 border-b border-amber-200 dark:border-amber-800">
@@ -190,7 +189,7 @@ function FormDialog({ initial, onClose, onSaved }: {
 
 /* ── Detail view ───────────────────────────────────────────── */
 function DetailView({ item, onBack, onEdit, onDelete }: {
-  item: Roadmap; onBack: () => void; onEdit: () => void; onDelete: () => void;
+  item: Roadmap; onBack: () => void; onEdit: () => void; onDelete: () => Promise<void>;
 }) {
   const [deleting, setDeleting] = useState(false);
 
@@ -260,7 +259,7 @@ function StrategyRow({ item, onView, onEdit, onDelete }: {
   item: Roadmap;
   onView: () => void;
   onEdit: () => void;
-  onDelete: () => void;
+  onDelete: () => Promise<void>;
 }) {
   const [deleting, setDeleting] = useState(false);
 
@@ -308,7 +307,6 @@ function StrategyRow({ item, onView, onEdit, onDelete }: {
     <div className="rounded-[8px] bg-white dark:bg-[#111] overflow-hidden"
       style={{ boxShadow: "var(--shadow-card)" }}>
 
-      {/* Mobile card */}
       <div className="flex items-center gap-3 px-4 py-3 md:hidden">
         <div className="shrink-0 w-7 h-7 rounded-[6px] flex items-center justify-center bg-[#f5f5f5] dark:bg-[#1a1a1a]">
           {item.type === "embed" ? <Link2 className="w-3.5 h-3.5 text-[#999]" /> : <FileText className="w-3.5 h-3.5 text-[#999]" />}
@@ -325,7 +323,6 @@ function StrategyRow({ item, onView, onEdit, onDelete }: {
         {actions}
       </div>
 
-      {/* Desktop grid row */}
       <div className="hidden md:grid items-center gap-3 px-5 py-3"
         style={{ gridTemplateColumns: "28px 2fr 120px 3fr 90px 88px" }}>
         <div className="w-7 h-7 rounded-[6px] flex items-center justify-center bg-[#f5f5f5] dark:bg-[#1a1a1a]">
@@ -399,7 +396,6 @@ export default function StrategyPage() {
         <FormDialog initial={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load(); }} />
       )}
 
-      {/* Header */}
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-[22px] font-bold tracking-tight text-[#171717] dark:text-[#f5f5f5] mt-0.5">Strategy</h1>
@@ -423,7 +419,6 @@ export default function StrategyPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {/* Table header — desktop only */}
           <div className="hidden md:grid items-center gap-3 px-5 py-1"
             style={{ gridTemplateColumns: "28px 2fr 120px 3fr 90px 88px" }}>
             <div />
@@ -434,7 +429,6 @@ export default function StrategyPage() {
             <div />
           </div>
 
-          {/* Rows */}
           {items.map(item => (
             <StrategyRow
               key={item.id}

@@ -1,5 +1,3 @@
-// lib/budget.ts
-
 export interface BudgetCategory {
   key: string;
   label: string;

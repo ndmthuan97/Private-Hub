@@ -17,5 +17,4 @@ export function getDb() {
   return _db;
 }
 
-// Re-export schema types for convenience
 export * from "./schema";

@@ -1,4 +1,3 @@
-// db/schema.ts — Drizzle ORM code-first schema
 import {
   pgTable, uuid, text, jsonb, integer,
   timestamp, numeric, unique,

@@ -1,15 +1,9 @@
-// components/ui/button.tsx
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-/**
- * Vercel KI compliance:
- * - Primary: dark bg (#171717), radius 6px, NO border
- * - Secondary: lighter bg, shadow-as-border
- * - Badge/pill radius (9999px) is ONLY for Badge component, NOT buttons
- */
+// Shadow-as-border only — no CSS border. Badge pill radius (9999px) is for Badge, not buttons.
 const buttonVariants = cva(
   [
     "inline-flex items-center justify-center gap-2 whitespace-nowrap",

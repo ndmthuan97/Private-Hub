@@ -21,10 +21,10 @@ export function EntryManager({ categories }: { categories: Category[] }) {
 
   const [addOpen, setAddOpen] = useState(false);
 
-  // dialog state
   const [detail, setDetail] = useState<Entry | null>(null);
   const [edit, setEdit]     = useState<Entry | null>(null);
 
+  // Named fetch$ to avoid shadowing the global fetch inside the callback
   const fetch$ = useCallback(async () => {
     setLoading(true);
     try {
@@ -70,7 +70,6 @@ export function EntryManager({ categories }: { categories: Category[] }) {
 
   return (
     <div className="space-y-3">
-      {/* Dialogs */}
       {detail && !edit && (
         <DetailDialog
           entry={detail}
@@ -88,7 +87,6 @@ export function EntryManager({ categories }: { categories: Category[] }) {
         />
       )}
 
-      {/* Add Dialog */}
       {addOpen && typeof window !== "undefined" && createPortal(
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4"
           style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}
@@ -147,7 +145,6 @@ export function EntryManager({ categories }: { categories: Category[] }) {
         document.body
       )}
 
-      {/* Table */}
       <div className="rounded-[8px] bg-white dark:bg-[#111] overflow-hidden"
         style={{ boxShadow: "var(--shadow-card)" }}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-5 py-3"

@@ -1,4 +1,3 @@
-// app/page.tsx — Dashboard Homepage (Dace style)
 import { MessageCircle, Wallet, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
@@ -28,7 +27,6 @@ const MODULES = [
 export default function DashboardPage() {
   return (
     <div className="px-6 py-8 space-y-6">
-      {/* Header */}
       <div>
         <p className="text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888] mb-1">
           Private Hub
@@ -41,7 +39,6 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Module cards */}
       <div className="space-y-3">
         {MODULES.map((mod) => {
           const Icon = mod.icon;
@@ -51,7 +48,6 @@ export default function DashboardPage() {
                 className="rounded-[8px] bg-white dark:bg-[#111] px-5 py-4 flex items-center gap-4 transition-all duration-150 hover:translate-y-[-1px]"
                 style={{ boxShadow: "var(--shadow-card)" }}
               >
-                {/* Icon */}
                 <div
                   className="w-10 h-10 rounded-[8px] flex items-center justify-center shrink-0 text-white"
                   style={{ background: mod.color }}
@@ -59,7 +55,6 @@ export default function DashboardPage() {
                   <Icon className="w-5 h-5" aria-hidden="true" />
                 </div>
 
-                {/* Text */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="text-[14px] font-semibold text-[#171717] dark:text-[#f5f5f5] tracking-tight">
@@ -78,7 +73,6 @@ export default function DashboardPage() {
                   <p className="text-[12px] text-[#999] leading-[1.5]">{mod.description}</p>
                 </div>
 
-                {/* Arrow */}
                 <ArrowRight
                   className="w-4 h-4 text-[#ccc] shrink-0 transition-transform duration-150 group-hover:translate-x-1"
                   aria-hidden="true"

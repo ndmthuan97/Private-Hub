@@ -1,4 +1,3 @@
-// lib/groq.ts
 import Groq from "groq-sdk";
 
 let _client: Groq | null = null;

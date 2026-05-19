@@ -56,6 +56,7 @@ const PERSONAS: { id: Persona; label: string; desc: string; icon: string }[] = [
 
 function pickRandom<T>(arr: T[], n: number, exclude: T[] = []): T[] {
   const pool = arr.filter(x => !exclude.includes(x));
+  // Fall back to full array when remaining pool is smaller than requested count
   const source = pool.length >= n ? pool : arr;
   return [...source].sort(() => Math.random() - 0.5).slice(0, n);
 }

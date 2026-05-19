@@ -156,7 +156,6 @@ export function Sidebar() {
         )}
         style={{ width: expanded ? 224 : 52, boxShadow: "rgba(0,0,0,0.06) 1px 0 0 0" }}
       >
-        {/* Logo */}
         <div className="px-[13px] py-4 shrink-0" style={{ boxShadow: "rgba(0,0,0,0.06) 0px 1px 0px 0px" }}>
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-[6px] flex items-center justify-center shrink-0" style={{ background: "hsl(25,95%,53%)" }}>
@@ -171,7 +170,6 @@ export function Sidebar() {
               style={{ opacity: expanded ? 1 : 0, transition: "opacity 150ms ease" }}>
               <PanelLeftClose className="w-3.5 h-3.5" />
             </button>
-            {/* Mobile close button */}
             <button onClick={() => setMobileOpen(false)}
               className="md:hidden flex h-6 w-6 items-center justify-center rounded-[5px] text-[#bbb] hover:text-[#666] dark:hover:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer shrink-0">
               <X className="w-3.5 h-3.5" />
@@ -179,7 +177,6 @@ export function Sidebar() {
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 px-[10px] py-3 space-y-0.5 overflow-hidden">
           {!expanded && (
             <button onClick={toggleSidebar}
@@ -209,7 +206,6 @@ export function Sidebar() {
             );
           })}
 
-          {/* External links */}
           <div className="pt-2 mt-2" style={{ boxShadow: "rgba(0,0,0,0.06) 0px -1px 0px 0px inset" }}>
             {allExternal.map(item => {
               const favicon = getFavicon(item.href);
@@ -265,7 +261,6 @@ export function Sidebar() {
           </div>
         </nav>
 
-        {/* Footer */}
         <div className="px-[10px] py-3 space-y-0.5 shrink-0" style={{ boxShadow: "rgba(0,0,0,0.06) 0px -1px 0px 0px" }}>
           <button onClick={toggleTheme}
             className="w-full flex items-center gap-2.5 px-[10px] py-2 rounded-[6px] text-[13px] font-medium text-[#999] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] hover:text-[#666] dark:hover:text-[#bbb] transition-colors duration-150 cursor-pointer whitespace-nowrap">

@@ -18,6 +18,8 @@ const MONTHS = ["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6
                 "Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12"];
 
 /* ── SVG Cycle Arrow Chart ── */
+// Segments are equal-angle slices. Each segment has an arrowhead tip (tipExt)
+// extending past the outer radius R, with a leader line and label placed at midAngle.
 function HexChart({ allocs }: { allocs: Allocation[] }) {
   const cx = 185, cy = 148, R = 68, r = 42, cr = 26, gap = 2.5, tipExt = 13;
   const midR  = (R + r) / 2;
@@ -139,7 +141,6 @@ export function DetailDialog({
         style={{ boxShadow: "var(--shadow-card)", maxHeight: "90vh", overflowY: "auto" }}
         onClick={e => e.stopPropagation()}>
 
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-3"
           style={{ boxShadow: "rgba(0,0,0,0.06) 0px 1px 0px 0px" }}>
           <p className="text-[18px] font-semibold text-[#171717] dark:text-[#f5f5f5]">
@@ -164,14 +165,11 @@ export function DetailDialog({
           </div>
         </div>
 
-        {/* Chart + Tracker: stacked on mobile, side-by-side on desktop */}
         <div className="flex flex-col md:flex-row md:items-stretch" style={{ boxShadow: "rgba(0,0,0,0.04) 0px 1px 0px 0px" }}>
-          {/* Chart */}
           <div className="w-full md:w-[420px] md:shrink-0 p-2 flex items-center justify-center md:border-r border-b md:border-b-0 border-[#f0f0f0] dark:border-[#222]">
             <HexChart allocs={allocs} />
           </div>
 
-          {/* Tracker */}
           <div className="flex-1 px-4 py-3 min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-[#999] mb-2.5">Theo dõi chi tiêu</p>
             <div className="space-y-3">
@@ -215,7 +213,6 @@ export function DetailDialog({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-between px-5 py-3"
           style={{ boxShadow: "rgba(0,0,0,0.06) 0px -1px 0px 0px" }}>
           <div className="text-[13px] text-[#999]">
@@ -231,7 +228,6 @@ export function DetailDialog({
         </div>
       </div>
 
-      {/* Delete confirm */}
       {delOpen && (
         <div className="absolute inset-0 flex items-center justify-center p-4" onClick={() => setDelOpen(false)}>
           <div className="w-full max-w-xs rounded-[10px] bg-white dark:bg-[#111] overflow-hidden"

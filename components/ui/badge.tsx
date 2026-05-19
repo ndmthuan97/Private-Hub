@@ -1,12 +1,8 @@
-// components/ui/badge.tsx
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-/**
- * Vercel KI: badge radius = 9999px (pill only).
- * font-size 12px, weight 500.
- */
+// Pill shape only (9999px). No CSS border — shadow-as-border pattern.
 const badgeVariants = cva(
   "inline-flex items-center rounded-[9999px] px-2.5 py-0.5 text-[12px] font-[500] leading-[1.33] transition-colors duration-[150ms]",
   {

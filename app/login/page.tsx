@@ -1,10 +1,7 @@
 "use client";
-// app/login/page.tsx — Passkey gate (light / dark)
-
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Sun, Moon, Lock } from "lucide-react";
-import { Suspense } from "react";
 
 // ─── Theme toggle (persisted in localStorage) ─────────────────
 function useTheme() {
@@ -98,7 +95,6 @@ function LoginForm() {
     >
       <GridBackground />
 
-      {/* Theme toggle */}
       <button
         id="btn-theme-toggle"
         onClick={toggle}
@@ -113,7 +109,6 @@ function LoginForm() {
         {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
       </button>
 
-      {/* Card */}
       <div
         className={`relative w-full max-w-[380px] rounded-[16px] p-8 transition-all duration-300 ${shake ? "animate-shake" : ""}`}
         style={{
@@ -121,7 +116,6 @@ function LoginForm() {
           boxShadow: "var(--shadow-card)",
         }}
       >
-        {/* Logo */}
         <div className="flex flex-col items-center gap-3 mb-8">
           <div
             className="w-14 h-14 rounded-[14px] flex items-center justify-center text-2xl"
@@ -145,9 +139,7 @@ function LoginForm() {
           </div>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Passkey input */}
           <div className="relative">
             <div
               className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -195,14 +187,12 @@ function LoginForm() {
             </button>
           </div>
 
-          {/* Error message */}
           {error && (
             <p className="text-[13px] text-center" style={{ color: "hsl(0,84%,62%)" }}>
               {error}
             </p>
           )}
 
-          {/* Submit */}
           <button
             id="btn-login"
             type="submit"
@@ -225,7 +215,6 @@ function LoginForm() {
           </button>
         </form>
 
-        {/* Footer */}
         <p
           className="text-center text-[12px] mt-6"
           style={{ color: "var(--fg-muted)" }}
@@ -234,7 +223,6 @@ function LoginForm() {
         </p>
       </div>
 
-      {/* Shake animation */}
       <style>{`
         @keyframes shake {
           0%,100% { transform: translateX(0); }

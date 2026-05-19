@@ -26,11 +26,8 @@ function ColorDot({ value, onChange }: { value: string; onChange: (c: string) =>
   const dialog = open && typeof document !== "undefined" && createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center"
       onMouseDown={e => { if (e.target === e.currentTarget) setOpen(false); }}>
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-      {/* Panel */}
       <div className="relative rounded-2xl bg-white dark:bg-[#1a1a1a] p-5 space-y-4 w-64 shadow-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <span className="text-[13px] font-semibold text-[#171717] dark:text-[#f5f5f5]">Chọn màu</span>
           <button type="button" onClick={() => setOpen(false)}
@@ -39,7 +36,6 @@ function ColorDot({ value, onChange }: { value: string; onChange: (c: string) =>
           </button>
         </div>
 
-        {/* Swatches */}
         <div className="grid grid-cols-6 gap-2">
           {BASIC_COLORS.map(c => (
             <button key={c} type="button" onClick={() => pick(c)}
@@ -51,7 +47,6 @@ function ColorDot({ value, onChange }: { value: string; onChange: (c: string) =>
           ))}
         </div>
 
-        {/* Hex input */}
         <div className="flex items-center gap-2 pt-1 border-t border-[#f0f0f0] dark:border-[#333]">
           <div className="w-6 h-6 rounded-full shrink-0 border border-[#e2e2e2] dark:border-[#333]" style={{ background: value }} />
           <input value={hex}
@@ -65,7 +60,6 @@ function ColorDot({ value, onChange }: { value: string; onChange: (c: string) =>
             style={{ boxShadow: "var(--shadow-border)" }} />
         </div>
 
-        {/* Confirm */}
         <button type="button" onClick={() => setOpen(false)}
           className="w-full h-8 rounded-[6px] text-[12px] font-medium bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 cursor-pointer transition-opacity">
           Xác nhận
@@ -205,7 +199,6 @@ export function CategoryManager({ categories, onRefresh }: { categories: Categor
 
   return (
     <div className="space-y-3">
-      {/* Sum indicator */}
       <div className="flex items-center justify-between px-1">
         <p className="text-[12px] text-[#999]">Tổng tỷ lệ phải bằng <strong className="text-[#171717] dark:text-[#f5f5f5]">100%</strong></p>
         <span className={`text-[12px] font-semibold tabular-nums px-2.5 py-0.5 rounded-full ${pctOk
@@ -215,7 +208,6 @@ export function CategoryManager({ categories, onRefresh }: { categories: Categor
         </span>
       </div>
 
-      {/* Category rows */}
       <div className="space-y-2">
         {categories.map(cat => {
           const isEditing = editId === cat.id;
@@ -225,7 +217,6 @@ export function CategoryManager({ categories, onRefresh }: { categories: Categor
               style={{ borderLeft: `3px solid ${isEditing ? editState.color : cat.color}`, boxShadow: "var(--shadow-card)" }}>
               <div className="px-5 py-3 space-y-3">
                 <div className="flex items-center gap-3">
-                  {/* Emoji with AI spinner */}
                   <div className="relative shrink-0">
                     <span className="text-xl">{isEditing ? editState.emoji : cat.emoji}</span>
                     {isEditing && suggestingEdit && (
@@ -233,7 +224,6 @@ export function CategoryManager({ categories, onRefresh }: { categories: Categor
                     )}
                   </div>
 
-                  {/* Label */}
                   <div className="flex-1 min-w-0">
                     {isEditing ? (
                       <input value={editState.label}
@@ -245,7 +235,6 @@ export function CategoryManager({ categories, onRefresh }: { categories: Categor
                     )}
                   </div>
 
-                  {/* Percentage */}
                   {isEditing ? (
                     <input type="number" value={editState.percentage}
                       onChange={e => setEditState(s => ({ ...s, percentage: e.target.value }))}
@@ -256,12 +245,10 @@ export function CategoryManager({ categories, onRefresh }: { categories: Categor
                     <span className="text-[15px] font-bold tabular-nums tracking-tight shrink-0" style={{ color: cat.color }}>{pct}%</span>
                   )}
 
-                  {/* Color dot (edit only) */}
                   {isEditing && (
                     <ColorDot value={editState.color} onChange={c => setEditState(s => ({ ...s, color: c }))} />
                   )}
 
-                  {/* Actions */}
                   <div className="flex items-center gap-1 shrink-0">
                     {isEditing ? (
                       <>
@@ -300,7 +287,6 @@ export function CategoryManager({ categories, onRefresh }: { categories: Categor
         })}
       </div>
 
-      {/* Add form */}
       {adding ? (
         <div className="rounded-[8px] bg-white dark:bg-[#111] px-5 py-4 space-y-3"
           style={{ boxShadow: "var(--shadow-card)" }}>
@@ -316,7 +302,6 @@ export function CategoryManager({ categories, onRefresh }: { categories: Categor
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Emoji preview with AI spinner */}
             <div className="relative w-9 h-9 rounded-[6px] flex items-center justify-center shrink-0 text-xl select-none"
               style={{ background: newCat.color + "22", border: `1.5px solid ${newCat.color}55` }}>
               {newCat.emoji}
