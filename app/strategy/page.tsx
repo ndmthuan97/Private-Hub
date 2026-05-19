@@ -5,10 +5,20 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { Plus, X, Check, Loader2, Pencil, Trash2, FileText, Link2, ExternalLink, ArrowLeft, Eye, Wand2, ClipboardPaste } from "lucide-react";
+import TurndownService from "turndown";
 import type { Roadmap } from "@/db/schema";
 
 type FormState = { title: string; type: "markdown" | "embed"; content: string };
 const EMPTY: FormState = { title: "", type: "markdown", content: "" };
+
+function htmlToMarkdown(html: string): string {
+  const td = new TurndownService({ headingStyle: "atx", bulletListMarker: "-", codeBlockStyle: "fenced" });
+  td.addRule("strikethrough", {
+    filter: ["del", "s"],
+    replacement: (content) => `~~${content}~~`,
+  });
+  return td.turndown(html).trim();
+}
 
 function convertToMarkdown(raw: string): string {
   return raw
@@ -142,7 +152,7 @@ function FormDialog({ initial, onClose, onSaved }: {
             {form.type === "markdown" && pasteMode && (
               <div className="mb-3 rounded-[8px] border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 overflow-hidden">
                 <div className="flex items-center justify-between px-3 py-2 border-b border-amber-200 dark:border-amber-800">
-                  <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400">Dán văn bản thô vào đây — sẽ tự chuyển sang Markdown</span>
+                  <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400">Dán từ Google Docs / Word / web — tự giữ style. Dán plain text → nhấn Chuyển đổi</span>
                   <button type="button" onClick={handleConvert} disabled={!rawText.trim()}
                     className="flex items-center gap-1.5 h-6 px-3 rounded-[5px] text-[11px] font-semibold bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-40 cursor-pointer transition-colors">
                     <Wand2 className="w-3 h-3" />Chuyển đổi
@@ -153,6 +163,17 @@ function FormDialog({ initial, onClose, onSaved }: {
                   placeholder="Dán nội dung vào đây..."
                   value={rawText}
                   onChange={e => setRawText(e.target.value)}
+                  onPaste={e => {
+                    const html = e.clipboardData.getData("text/html");
+                    if (html) {
+                      e.preventDefault();
+                      const md = htmlToMarkdown(html);
+                      setForm(f => ({ ...f, content: md }));
+                      setPasteMode(false);
+                      setRawText("");
+                      toast.success("Đã chuyển đổi sang Markdown");
+                    }
+                  }}
                   rows={8}
                   className="w-full px-3 py-2.5 text-[12px] bg-transparent text-[#333] dark:text-[#ddd] resize-none leading-relaxed outline-none"
                 />
