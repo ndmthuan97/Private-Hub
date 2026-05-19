@@ -37,6 +37,25 @@ function convertToMarkdown(raw: string): string {
     .trim();
 }
 
+function toEmbedUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const h = u.hostname.replace("www.", "");
+    if (h === "docs.google.com") {
+      // Strip trailing slash then last path segment, replace with embed keyword
+      const base = u.pathname.replace(/\/(edit|view|preview|embed|htmlview|pub)(\/.*)?$/, "");
+      if (url.includes("/presentation/")) return `https://docs.google.com${base}/embed`;
+      if (url.includes("/spreadsheets/")) return `https://docs.google.com${base}/htmlview`;
+      if (url.includes("/document/"))     return `https://docs.google.com${base}/preview`;
+    }
+    if (h === "drive.google.com") {
+      const base = u.pathname.replace(/\/(view|edit|preview)(\/.*)?$/, "");
+      return `https://drive.google.com${base}/preview`;
+    }
+  } catch { /* keep original */ }
+  return url;
+}
+
 function detectFileType(url: string): { label: string; color: string; bg: string } {
   try {
     const h = new URL(url).hostname.replace("www.", "");
@@ -256,7 +275,7 @@ function DetailView({ item, onBack, onEdit, onDelete }: {
       </div>
 
       {item.type === "embed" ? (
-        <iframe src={item.content} className="flex-1 w-full border-0" title={item.title} allowFullScreen />
+        <iframe src={toEmbedUrl(item.content)} className="flex-1 w-full border-0" title={item.title} allowFullScreen />
       ) : (
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-8 py-8
