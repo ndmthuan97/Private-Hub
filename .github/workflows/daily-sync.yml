@@ -8,10 +8,8 @@ on:
   # Allow manual trigger from GitHub Actions tab
   workflow_dispatch:
 
-# Required for auto-refreshing GOOGLE_COOKIES GitHub Secret
 permissions:
   contents: read
-  secrets: write
 
 jobs:
   sync:
