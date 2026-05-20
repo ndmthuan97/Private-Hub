@@ -10,12 +10,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     .set({ title: title.trim(), type, content, updatedAt: new Date() })
     .where(eq(roadmaps.id, id))
     .returning();
-  return NextResponse.json({ data: row });
+  return NextResponse.json({ statusCode: 200, message: "Updated", data: row, errors: null });
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const db = getDb();
   await db.delete(roadmaps).where(eq(roadmaps.id, id));
-  return NextResponse.json({ statusCode: 200, message: "Deleted" });
+  return NextResponse.json({ statusCode: 200, message: "Deleted", data: null, errors: null });
 }
