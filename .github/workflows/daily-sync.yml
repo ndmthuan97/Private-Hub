@@ -36,7 +36,7 @@ jobs:
 
       # ── 4. Install Playwright browsers (needed by notebooklm-py) ─────────────
       - name: Install Playwright Chromium
-        run: playwright install chromium --with-deps
+        run: python -m playwright install chromium --with-deps
 
       # ── 5. Restore Google session cookies ─────────────────────────────────────
       #    GOOGLE_COOKIES secret must be the JSON array of cookies exported
