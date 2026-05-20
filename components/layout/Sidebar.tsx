@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { MessageCircle, Wallet, LayoutDashboard, LogOut, Sun, Moon, Map, Plus, Globe, X, Check, CalendarDays, PanelLeftClose, PanelLeftOpen, Menu } from "lucide-react";
+import { MessageCircle, Wallet, LayoutDashboard, LogOut, Sun, Moon, Map, Plus, Globe, X, Check, CalendarDays, PanelLeftClose, PanelLeftOpen, Menu, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
 
@@ -11,10 +11,10 @@ const NAV_ITEMS = [
   { href: "/budget",       label: "Phân Bổ Ngân Sách", icon: Wallet,          color: "hsl(38,92%,52%)" },
   { href: "/strategy",     label: "Strategy",           icon: Map,             color: "hsl(262,83%,58%)" },
   { href: "/calendar",     label: "Calendar",           icon: CalendarDays,    color: "hsl(217,91%,60%)" },
+  { href: "/notebooklm",   label: "NotebookLM",         icon: BookOpen,        color: "hsl(217,91%,60%)" },
 ];
 
 const DEFAULT_EXTERNAL = [
-  { href: "https://notebooklm.google.com/",       label: "NotebookLM",     color: "hsl(217,91%,60%)" },
   { href: "https://dailydictation.com/exercises", label: "Daily Dictation", color: "hsl(160,84%,42%)" },
 ];
 
