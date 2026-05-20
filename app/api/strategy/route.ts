@@ -9,6 +9,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // Guard: only allow requests with valid CRON_SECRET (from automation script or Vercel Cron)
+  const auth = req.headers.get("authorization");
+  const expected = `Bearer ${process.env.CRON_SECRET}`;
+  if (!process.env.CRON_SECRET || auth !== expected) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
   const { title, type, content } = await req.json() as { title: string; type: string; content: string };
   if (!title?.trim()) return NextResponse.json({ message: "Thiếu tiêu đề" }, { status: 400 });
   const db = getDb();
