@@ -274,7 +274,7 @@ export function Sidebar() {
             <LogOut className="w-4 h-4 shrink-0" />
             <span style={{ opacity: expanded ? 1 : 0, transition: "opacity 150ms ease" }}>Đăng xuất</span>
           </button>
-          {expanded && <p className="text-[10px] text-[#bbb] px-[10px] pt-1 whitespace-nowrap">Private Hub v1.0</p>}
+          {expanded && <p className="text-[10px] text-[#bbb] px-[10px] pt-1 whitespace-nowrap">Private Hub v1.1</p>}
         </div>
       </aside>
     </>
