@@ -2,8 +2,9 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { Check, Pencil, Trash2, X, AlertTriangle, Loader2 } from "lucide-react";
+import { Check, Pencil, Trash2, X, AlertTriangle, Loader2, Save } from "lucide-react";
 import { formatVND } from "@/lib/utils";
+import { Tip } from "@/components/ui/tip";
 
 export interface Allocation {
   key: string; label: string; emoji: string; color: string;
@@ -147,21 +148,27 @@ export function DetailDialog({
             {MONTHS[entry.month-1]} {entry.year}
           </p>
           <div className="flex items-center gap-1.5">
-            <button onClick={onEdit} title="Chỉnh sửa"
-              className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#666] dark:text-[#888] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
-              style={{ boxShadow: "var(--shadow-border)" }}>
-              <Pencil className="w-4 h-4" />
-            </button>
-            <button onClick={() => setDelOpen(true)} title="Xóa"
-              className="flex h-8 w-8 items-center justify-center rounded-[6px] text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer"
-              style={{ boxShadow: "var(--shadow-border)" }}>
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <button onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
-              style={{ boxShadow: "var(--shadow-border)" }}>
-              <X className="w-4 h-4" />
-            </button>
+            <Tip label="Chỉnh sửa">
+              <button onClick={onEdit}
+                className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#666] dark:text-[#888] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
+                style={{ boxShadow: "var(--shadow-border)" }}>
+                <Pencil className="w-4 h-4" />
+              </button>
+            </Tip>
+            <Tip label="Xóa bản ghi">
+              <button onClick={() => setDelOpen(true)}
+                className="flex h-8 w-8 items-center justify-center rounded-[6px] text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer"
+                style={{ boxShadow: "var(--shadow-border)" }}>
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </Tip>
+            <Tip label="Đóng">
+              <button onClick={onClose}
+                className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
+                style={{ boxShadow: "var(--shadow-border)" }}>
+                <X className="w-4 h-4" />
+              </button>
+            </Tip>
           </div>
         </div>
 
@@ -220,11 +227,12 @@ export function DetailDialog({
             {" "}/ {formatVND(total)}
             {total > 0 && <span className="ml-1 text-[#bbb]">({Math.round((totalSpent/total)*100)}%)</span>}
           </div>
-          <button onClick={save} disabled={saving}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-[6px] text-[13px] font-medium bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40">
-            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-            {saving ? "Đang lưu..." : "Lưu chi tiêu"}
-          </button>
+          <Tip label={saving ? "Đang lưu..." : "Lưu chi tiêu"}>
+            <button onClick={save} disabled={saving}
+              className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40">
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+            </button>
+          </Tip>
         </div>
       </div>
 

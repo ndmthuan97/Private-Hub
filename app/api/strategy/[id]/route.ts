@@ -4,10 +4,12 @@ import { eq } from "drizzle-orm";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { title, type, content } = await req.json() as { title: string; type: string; content: string };
+  const { title, type, content, folderId } = await req.json() as {
+    title: string; type: string; content: string; folderId?: string | null;
+  };
   const db = getDb();
   const [row] = await db.update(roadmaps)
-    .set({ title: title.trim(), type, content, updatedAt: new Date() })
+    .set({ title: title.trim(), type, content, folderId: folderId ?? null, updatedAt: new Date() })
     .where(eq(roadmaps.id, id))
     .returning();
   return NextResponse.json({ statusCode: 200, message: "Updated", data: row, errors: null });

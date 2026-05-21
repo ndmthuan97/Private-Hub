@@ -6,6 +6,7 @@ import type { Category } from "./page";
 import { formatVND } from "@/lib/utils";
 import { Plus, Search, X, Check, Loader2 } from "lucide-react";
 import { DetailDialog, EditDialog, type Entry, type Allocation } from "./DetailDialog";
+import { Tip } from "@/components/ui/tip";
 
 const MONTHS = ["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6",
                 "Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12"];
@@ -160,10 +161,12 @@ export function EntryManager({ categories }: { categories: Category[] }) {
                 className="h-7 pl-7 pr-3 w-full sm:w-36 text-[12px] rounded-[5px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5]"
                 style={{ boxShadow: "var(--shadow-border)" }} />
             </div>
-            <button onClick={() => setAddOpen(true)}
-              className="h-7 px-3 rounded-[5px] text-[12px] font-medium flex items-center gap-1 bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer shrink-0">
-              <Plus className="w-3 h-3" />Thêm phân bổ
-            </button>
+            <Tip label="Thêm phân bổ mới">
+              <button onClick={() => setAddOpen(true)}
+                className="h-7 w-7 flex items-center justify-center rounded-[5px] bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer shrink-0">
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </Tip>
           </div>
         </div>
 

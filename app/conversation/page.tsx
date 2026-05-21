@@ -1,8 +1,9 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, RotateCcw, RefreshCw, ArrowLeft, Loader2 } from "lucide-react";
+import { Send, RotateCcw, RefreshCw, ArrowLeft, Loader2, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Tip } from "@/components/ui/tip";
 
 type Language = "en" | "jp";
 type Persona = "teacher" | "friend" | "business";
@@ -99,10 +100,12 @@ function MessageBubble({ msg }: { msg: Message }) {
           </div>
         )}
         {!isUser && (
-          <button onClick={speak}
-            className="text-[11px] text-[var(--fg-muted)] hover:text-[var(--fg-secondary)] transition-colors flex items-center gap-1 cursor-pointer">
-            🔊 Phát âm
-          </button>
+          <Tip label="Nghe phát âm" side="bottom">
+            <button onClick={speak}
+              className="flex items-center justify-center w-6 h-6 rounded-full text-[var(--fg-muted)] hover:text-[var(--fg-secondary)] hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer">
+              <Volume2 className="w-3 h-3" />
+            </button>
+          </Tip>
         )}
       </div>
       {isUser && (
@@ -261,11 +264,13 @@ export default function ConversationPage() {
               <h2 className="text-[18px] font-semibold text-[#171717] dark:text-[#f5f5f5]">Chọn chủ đề</h2>
               <p className="text-[12px] text-[#999] mt-0.5">Bấm để chọn, làm mới để xem chủ đề khác</p>
             </div>
-            <button onClick={refreshTopics}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-[6px] text-[12px] font-medium text-[#666] dark:text-[#888] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
-              style={{ boxShadow: "var(--shadow-border)" }}>
-              <RefreshCw className="w-3.5 h-3.5" />Làm mới
-            </button>
+            <Tip label="Làm mới chủ đề">
+              <button onClick={refreshTopics}
+                className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#666] dark:text-[#888] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
+                style={{ boxShadow: "var(--shadow-border)" }}>
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+            </Tip>
           </div>
           <div className="flex flex-wrap gap-2">
             {suggestedTopics.map((topic, i) => (

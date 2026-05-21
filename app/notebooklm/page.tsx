@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { Tip } from "@/components/ui/tip";
 
 const STORAGE_KEY = "ph_notebooklm_prompts";
 
@@ -132,13 +133,13 @@ export default function NotebookLMPage() {
             <h1 className="text-[15px] font-semibold text-[var(--fg-primary)] truncate">NotebookLM</h1>
             <span className="text-[12px] text-[var(--fg-muted)] hidden sm:inline">— Kho prompt</span>
           </div>
-          <a href={NLM_URL} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1.5 h-8 px-3 rounded-[6px] text-[12px] font-medium text-[#666] dark:text-[#888] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] transition-colors shrink-0"
-            style={{ boxShadow: "var(--shadow-border)" }}>
-            <ExternalLink className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Mở NotebookLM</span>
-            <span className="sm:hidden">Mở</span>
-          </a>
+          <Tip label="Mở NotebookLM">
+            <a href={NLM_URL} target="_blank" rel="noopener noreferrer"
+              className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#666] dark:text-[#888] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] transition-colors shrink-0"
+              style={{ boxShadow: "var(--shadow-border)" }}>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </Tip>
         </div>
       </header>
 
@@ -149,11 +150,12 @@ export default function NotebookLMPage() {
           <p className="text-[13px] text-[var(--fg-muted)]">
             {prompts.length} prompt{prompts.length !== 1 ? "s" : ""}
           </p>
-          <button onClick={openAdd}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-[6px] text-[12px] font-medium bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 transition-opacity cursor-pointer">
-            <Plus className="w-3.5 h-3.5" />
-            Thêm prompt
-          </button>
+          <Tip label="Thêm prompt mới">
+            <button onClick={openAdd}
+              className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 transition-opacity cursor-pointer">
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </Tip>
         </div>
 
         {/* Prompt list */}
@@ -273,26 +275,29 @@ function PromptCard({
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/card:opacity-100 transition-opacity">
-          <button onClick={onEdit}
-            className="flex items-center justify-center w-7 h-7 rounded-[6px] text-[#999] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] hover:text-[#666] dark:hover:text-[#ccc] transition-colors cursor-pointer"
-            title="Chỉnh sửa">
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={onDelete}
-            className="flex items-center justify-center w-7 h-7 rounded-[6px] text-[#999] hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 transition-colors cursor-pointer"
-            title="Xóa">
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={onCopy}
-            className={cn(
-              "flex items-center gap-1.5 h-7 px-2.5 rounded-[6px] text-[11px] font-medium transition-all cursor-pointer",
-              copied
-                ? "bg-green-50 dark:bg-green-950/30 text-green-600"
-                : "bg-[var(--bg-elevated)] text-[var(--fg-muted)] hover:text-[var(--fg-primary)]"
-            )}>
-            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-            {copied ? "Copied!" : "Copy"}
-          </button>
+          <Tip label="Chỉnh sửa">
+            <button onClick={onEdit}
+              className="flex items-center justify-center w-7 h-7 rounded-[6px] text-[#999] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] hover:text-[#666] dark:hover:text-[#ccc] transition-colors cursor-pointer">
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          </Tip>
+          <Tip label="Xóa prompt">
+            <button onClick={onDelete}
+              className="flex items-center justify-center w-7 h-7 rounded-[6px] text-[#999] hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 transition-colors cursor-pointer">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </Tip>
+          <Tip label={copied ? "Đã copy!" : "Copy prompt"}>
+            <button onClick={onCopy}
+              className={cn(
+                "flex items-center justify-center w-7 h-7 rounded-[6px] transition-all cursor-pointer",
+                copied
+                  ? "bg-green-50 dark:bg-green-950/30 text-green-600"
+                  : "text-[#999] bg-[var(--bg-elevated)] hover:text-[var(--fg-primary)]"
+              )}>
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
+          </Tip>
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import type { Category } from "./page";
 import { Plus, Trash2, Save, X, Pencil, Check, Loader2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tip } from "@/components/ui/tip";
 
 const BASIC_COLORS = [
   "#ef4444","#f97316","#eab308","#22c55e",
@@ -252,29 +253,37 @@ export function CategoryManager({ categories, onRefresh }: { categories: Categor
                   <div className="flex items-center gap-1 shrink-0">
                     {isEditing ? (
                       <>
-                        <button onClick={() => saveEdit(cat)} disabled={saving}
-                          className="flex h-7 w-7 items-center justify-center rounded-[4px] bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] cursor-pointer hover:opacity-80 disabled:opacity-40">
-                          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                        </button>
-                        <button onClick={() => setEditId(null)}
-                          className="flex h-7 w-7 items-center justify-center rounded-[4px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] cursor-pointer transition-colors"
-                          style={{ boxShadow: "var(--shadow-border)" }}>
-                          <X className="w-3.5 h-3.5" />
-                        </button>
+                        <Tip label="Lưu thay đổi">
+                          <button onClick={() => saveEdit(cat)} disabled={saving}
+                            className="flex h-7 w-7 items-center justify-center rounded-[4px] bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] cursor-pointer hover:opacity-80 disabled:opacity-40">
+                            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                          </button>
+                        </Tip>
+                        <Tip label="Hủy chỉnh sửa">
+                          <button onClick={() => setEditId(null)}
+                            className="flex h-7 w-7 items-center justify-center rounded-[4px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] cursor-pointer transition-colors"
+                            style={{ boxShadow: "var(--shadow-border)" }}>
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </Tip>
                       </>
                     ) : (
                       <>
-                        <button onClick={() => startEdit(cat)}
-                          className="flex h-7 w-7 items-center justify-center rounded-[4px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
-                          style={{ boxShadow: "var(--shadow-border)" }}>
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => handleDelete(cat.id, cat.label)}
-                          disabled={deletingId === cat.id}
-                          className="flex h-7 w-7 items-center justify-center rounded-[4px] text-[#999] hover:text-red-500 transition-colors cursor-pointer disabled:opacity-40"
-                          style={{ boxShadow: "var(--shadow-border)" }}>
-                          {deletingId === cat.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                        </button>
+                        <Tip label="Chỉnh sửa hạng mục">
+                          <button onClick={() => startEdit(cat)}
+                            className="flex h-7 w-7 items-center justify-center rounded-[4px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
+                            style={{ boxShadow: "var(--shadow-border)" }}>
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        </Tip>
+                        <Tip label="Xóa hạng mục">
+                          <button onClick={() => handleDelete(cat.id, cat.label)}
+                            disabled={deletingId === cat.id}
+                            className="flex h-7 w-7 items-center justify-center rounded-[4px] text-[#999] hover:text-red-500 transition-colors cursor-pointer disabled:opacity-40"
+                            style={{ boxShadow: "var(--shadow-border)" }}>
+                            {deletingId === cat.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                          </button>
+                        </Tip>
                       </>
                     )}
                   </div>
@@ -329,16 +338,19 @@ export function CategoryManager({ categories, onRefresh }: { categories: Categor
           </div>
 
           <div className="flex gap-2 justify-end">
-            <button onClick={() => { setAdding(false); setNewCat({ label: "", emoji: "💡", color: "#6366f1", percentage: "0" }); }}
-              className="h-7 px-3 rounded-[5px] text-[12px] font-medium text-[#666] hover:text-[#171717] dark:hover:text-[#f5f5f5] cursor-pointer transition-colors"
-              style={{ boxShadow: "var(--shadow-border)" }}>
-              Hủy
-            </button>
-            <button onClick={handleAdd} disabled={saving}
-              className="h-7 px-3 rounded-[5px] text-[12px] font-medium flex items-center gap-1 bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 cursor-pointer disabled:opacity-40">
-              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-              {saving ? "Đang lưu..." : "Thêm"}
-            </button>
+            <Tip label="Hủy thêm hạng mục">
+              <button onClick={() => { setAdding(false); setNewCat({ label: "", emoji: "💡", color: "#6366f1", percentage: "0" }); }}
+                className="h-7 w-7 flex items-center justify-center rounded-[5px] text-[#666] hover:text-[#171717] dark:hover:text-[#f5f5f5] cursor-pointer transition-colors"
+                style={{ boxShadow: "var(--shadow-border)" }}>
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </Tip>
+            <Tip label={saving ? "Đang lưu..." : "Lưu hạng mục mới"}>
+              <button onClick={handleAdd} disabled={saving}
+                className="h-7 w-7 flex items-center justify-center rounded-[5px] bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 cursor-pointer disabled:opacity-40">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              </button>
+            </Tip>
           </div>
         </div>
       ) : (
