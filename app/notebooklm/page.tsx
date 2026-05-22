@@ -1,117 +1,156 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Plus, Copy, Check, Trash2, X, ExternalLink, BookOpen, Pencil } from "lucide-react";
+import { Plus, Copy, Check, Trash2, X, ExternalLink, BookOpen, Pencil, ClipboardCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Tip } from "@/components/ui/tip";
 
-const STORAGE_KEY = "ph_notebooklm_prompts";
-
 const NLM_URL = "https://notebooklm.google.com/";
 
-interface Prompt {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: number;
-}
-
+// Default prompts are always rendered from code — never stored in DB
 const DEFAULT_PROMPTS: Prompt[] = [
   {
     id: "default-1",
     title: "Email từ vựng ngẫu nhiên",
     content: `Hôm nay hãy lấy ngẫu nhiên 10 từ mới trong file từ vựng này (ưu tiên các từ loại Động từ và Danh từ). Hãy viết cho tôi một đoạn Email công sở (chuẩn Part 7 TOEIC) bằng 100% tiếng Anh bao gồm 10 từ này. Phía sau mỗi từ vựng đó, hãy mở ngoặc đơn và ghi nghĩa tiếng Việt của nó (ví dụ: implement (thực hiện)).`,
-    createdAt: 0,
+    quizPrompt: `The quiz must focus on all vocabulary words that appeared in the office email just generated — including the 10 selected words AND any other notable words from the email body. Test their meanings, correct usage in context, and synonyms. Questions should use fill-in-the-blank or choose-the-correct-meaning format with realistic workplace sentences.`,
+    isDefault: true,
+    sortOrder: -2,
+    createdAt: new Date(0).toISOString(),
+    updatedAt: new Date(0).toISOString(),
   },
   {
     id: "default-2",
     title: "Giải thích ngữ pháp + bài tập",
     content: `Hãy tóm tắt cho tôi quy tắc cốt lõi nhất của chủ điểm ngữ pháp: '[Điền tên bài/chủ đề bạn muốn học, VD: Rút gọn mệnh đề quan hệ]'. Dùng ngôn ngữ bình dân, dễ hiểu nhất, tuyệt đối không dùng từ ngữ học thuật giáo điều. Sau đó, cho tôi 3 câu bài tập trắc nghiệm siêu ngắn để tôi test thử ngay xem có hiểu lý thuyết chưa nhé.`,
-    createdAt: 0,
+    quizPrompt: `The quiz must focus solely on the grammar topic just explained in the previous response. Questions must test whether I can correctly apply the grammar rule in real sentences — include tricky distractors that reveal common mistakes. Do not test unrelated grammar points.`,
+    isDefault: true,
+    sortOrder: -1,
+    createdAt: new Date(0).toISOString(),
+    updatedAt: new Date(0).toISOString(),
   },
 ];
 
-function generateId() {
-  return `prompt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+interface Prompt {
+  id: string;
+  title: string;
+  content: string;
+  quizPrompt?: string | null;
+  isDefault?: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function NotebookLMPage() {
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [customPrompts, setCustomPrompts] = useState<Prompt[]>([]);
+  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ title: "", content: "" });
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ title: "", content: "", quizPrompt: "" });
   const [mounted, setMounted] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
 
+  // All prompts shown: defaults first, then user-created sorted by sortOrder
+  const allPrompts = [...DEFAULT_PROMPTS, ...customPrompts];
+
   useEffect(() => {
     setMounted(true);
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        setPrompts(JSON.parse(raw));
-      } else {
-        setPrompts(DEFAULT_PROMPTS);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_PROMPTS));
-      }
-    } catch {
-      setPrompts(DEFAULT_PROMPTS);
-    }
+    fetchPrompts();
   }, []);
 
   useEffect(() => {
     if (modalOpen) setTimeout(() => titleRef.current?.focus(), 50);
   }, [modalOpen]);
 
-  function saveToStorage(next: Prompt[]) {
-    setPrompts(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  async function fetchPrompts() {
+    try {
+      const res = await fetch("/api/notebooklm/prompts");
+      const json = await res.json();
+      setCustomPrompts(json.data ?? []);
+    } catch {
+      toast.error("Không tải được danh sách prompt.");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function handleCopy(id: string, content: string) {
+  function handleCopy(id: string, content: string, isQuiz = false) {
     navigator.clipboard.writeText(content).then(() => {
-      setCopied(id);
-      toast.success("Đã copy prompt!");
+      setCopied(isQuiz ? `quiz-${id}` : id);
+      toast.success(isQuiz ? "Đã copy Quiz Prompt!" : "Đã copy prompt!");
       setTimeout(() => setCopied(null), 2000);
     });
   }
 
   function openAdd() {
     setEditingId(null);
-    setForm({ title: "", content: "" });
+    setForm({ title: "", content: "", quizPrompt: "" });
     setModalOpen(true);
   }
 
   function openEdit(p: Prompt) {
     setEditingId(p.id);
-    setForm({ title: p.title, content: p.content });
+    setForm({ title: p.title, content: p.content, quizPrompt: p.quizPrompt ?? "" });
     setModalOpen(true);
   }
 
-  function handleSave() {
+  async function handleSave() {
     const title = form.title.trim();
     const content = form.content.trim();
+    const quizPrompt = form.quizPrompt.trim() || undefined;
     if (!title || !content) {
       toast.error("Vui lòng điền đủ tiêu đề và nội dung.");
       return;
     }
-    if (editingId) {
-      saveToStorage(prompts.map(p => p.id === editingId ? { ...p, title, content } : p));
-      toast.success("Đã cập nhật prompt.");
-    } else {
-      const newPrompt: Prompt = { id: generateId(), title, content, createdAt: Date.now() };
-      saveToStorage([...prompts, newPrompt]);
-      toast.success("Đã thêm prompt mới.");
+
+    setSaving(true);
+    try {
+      if (editingId) {
+        // Update existing custom prompt
+        const res = await fetch(`/api/notebooklm/prompts/${editingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, content, quizPrompt }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.message);
+        setCustomPrompts(prev => prev.map(p => p.id === editingId ? json.data : p));
+        toast.success("Đã cập nhật prompt.");
+      } else {
+        // Create new custom prompt
+        const res = await fetch("/api/notebooklm/prompts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, content, quizPrompt }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.message);
+        setCustomPrompts(prev => [...prev, json.data]);
+        toast.success("Đã thêm prompt mới.");
+      }
+      setModalOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Lỗi khi lưu prompt.");
+    } finally {
+      setSaving(false);
     }
-    setModalOpen(false);
   }
 
-  function handleDelete(id: string) {
-    saveToStorage(prompts.filter(p => p.id !== id));
-    toast.success("Đã xóa prompt.");
+  async function handleDelete(id: string) {
+    try {
+      const res = await fetch(`/api/notebooklm/prompts/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Xóa thất bại");
+      setCustomPrompts(prev => prev.filter(p => p.id !== id));
+      toast.success("Đã xóa prompt.");
+    } catch {
+      toast.error("Không xóa được prompt.");
+    }
   }
 
   function handleModalKeyDown(e: React.KeyboardEvent) {
@@ -145,10 +184,10 @@ export default function NotebookLMPage() {
 
       {/* ── Content ─────────────────────────────────────────────── */}
       <main className="flex-1 px-5 md:px-8 py-6 max-w-3xl w-full mx-auto">
-        {/* Add button */}
+        {/* Toolbar */}
         <div className="flex items-center justify-between mb-5">
           <p className="text-[13px] text-[var(--fg-muted)]">
-            {prompts.length} prompt{prompts.length !== 1 ? "s" : ""}
+            {loading ? "Đang tải…" : `${allPrompts.length} prompt${allPrompts.length !== 1 ? "s" : ""}`}
           </p>
           <Tip label="Thêm prompt mới">
             <button onClick={openAdd}
@@ -158,25 +197,36 @@ export default function NotebookLMPage() {
           </Tip>
         </div>
 
-        {/* Prompt list */}
-        <div className="space-y-3">
-          {prompts.map(p => (
-            <PromptCard
-              key={p.id}
-              prompt={p}
-              copied={copied === p.id}
-              onCopy={() => handleCopy(p.id, p.content)}
-              onEdit={() => openEdit(p)}
-              onDelete={() => handleDelete(p.id)}
-            />
-          ))}
+        {/* Loading skeleton */}
+        {loading && (
+          <div className="flex items-center justify-center py-16 text-[var(--fg-muted)]">
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            <span className="text-[13px]">Đang tải prompts...</span>
+          </div>
+        )}
 
-          {prompts.length === 0 && (
-            <div className="text-center py-16 text-[var(--fg-muted)] text-[13px]">
-              Chưa có prompt nào. Nhấn <strong>Thêm prompt</strong> để bắt đầu.
-            </div>
-          )}
-        </div>
+        {/* Prompt list */}
+        {!loading && (
+          <div className="space-y-3">
+            {allPrompts.map(p => (
+              <PromptCard
+                key={p.id}
+                prompt={p}
+                copied={copied}
+                onCopy={() => handleCopy(p.id, p.content)}
+                onCopyQuiz={() => p.quizPrompt && handleCopy(p.id, p.quizPrompt, true)}
+                onEdit={() => openEdit(p)}
+                onDelete={() => handleDelete(p.id)}
+              />
+            ))}
+
+            {allPrompts.length === 0 && (
+              <div className="text-center py-16 text-[var(--fg-muted)] text-[13px]">
+                Chưa có prompt nào. Nhấn <strong>Thêm prompt</strong> để bắt đầu.
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       {/* ── Modal ───────────────────────────────────────────────── */}
@@ -215,7 +265,21 @@ export default function NotebookLMPage() {
                   placeholder="Nhập nội dung prompt..."
                   value={form.content}
                   onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
-                  rows={6}
+                  rows={5}
+                  className="w-full px-3 py-2.5 text-[13px] rounded-[6px] bg-[var(--bg-elevated)] text-[var(--fg-primary)] outline-none resize-none leading-relaxed"
+                  style={{ boxShadow: "var(--shadow-border)" }}
+                />
+              </div>
+              <div>
+                {/* Quiz prompt is optional — paste into NotebookLM Customize Quiz dialog */}
+                <label className="block text-[11px] font-medium mb-1.5 uppercase tracking-wide" style={{ color: "hsl(38,92%,50%)" }}>
+                  Quiz Prompt <span className="normal-case tracking-normal font-normal text-[var(--fg-muted)]">(tuỳ chọn)</span>
+                </label>
+                <textarea
+                  placeholder="Prompt để kiểm tra lại sau khi học, dán vào ô Customize Quiz của NotebookLM..."
+                  value={form.quizPrompt}
+                  onChange={e => setForm(f => ({ ...f, quizPrompt: e.target.value }))}
+                  rows={4}
                   className="w-full px-3 py-2.5 text-[13px] rounded-[6px] bg-[var(--bg-elevated)] text-[var(--fg-primary)] outline-none resize-none leading-relaxed"
                   style={{ boxShadow: "var(--shadow-border)" }}
                 />
@@ -227,10 +291,12 @@ export default function NotebookLMPage() {
                 className="flex-1 h-9 rounded-[6px] text-[13px] font-medium text-[var(--fg-muted)] hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer">
                 Hủy
               </button>
-              <button onClick={handleSave}
-                className="flex-1 h-9 rounded-[6px] text-[13px] font-medium bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center gap-1.5">
-                <Check className="w-3.5 h-3.5" />
-                {editingId ? "Cập nhật" : "Lưu"}
+              <button onClick={handleSave} disabled={saving}
+                className="flex-1 h-9 rounded-[6px] text-[13px] font-medium bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60">
+                {saving
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : <Check className="w-3.5 h-3.5" />}
+                {saving ? "Đang lưu..." : editingId ? "Cập nhật" : "Lưu"}
               </button>
             </div>
           </div>
@@ -241,65 +307,143 @@ export default function NotebookLMPage() {
   );
 }
 
+function PromptSection({
+  label,
+  icon,
+  text,
+  copyLabel,
+  copied,
+  onCopy,
+}: {
+  label: string;
+  icon?: React.ReactNode;
+  text: string;
+  copyLabel: string;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="rounded-[6px] bg-[var(--bg-elevated)] overflow-hidden"
+      style={{ boxShadow: "var(--shadow-border)" }}>
+
+      {/* ── Section header: label + chevron (accordion toggle) + copy ── */}
+      <div className="flex items-center gap-2 px-3 py-2">
+        {/* Left: chevron + label — clicking here toggles expand */}
+        <button
+          onClick={() => setExpanded(v => !v)}
+          className="flex items-center gap-1.5 flex-1 min-w-0 cursor-pointer group/sec text-left"
+        >
+          <svg
+            className="w-3 h-3 shrink-0 text-[var(--fg-muted)] transition-transform duration-150"
+            style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--fg-muted)] flex items-center gap-1 shrink-0">
+            {icon}{label}
+          </span>
+          {/* 1-line preview when collapsed */}
+          {!expanded && (
+            <span className="text-[11.5px] text-[var(--fg-secondary)] truncate min-w-0">
+              {text}
+            </span>
+          )}
+        </button>
+
+        {/* Right: copy button — always visible */}
+        <Tip label={copied ? "Đã copy!" : copyLabel}>
+          <button onClick={onCopy}
+            className={cn(
+              "flex items-center gap-1 h-5 px-1.5 rounded-[4px] text-[10px] font-medium transition-all cursor-pointer shrink-0",
+              copied
+                ? "bg-green-100 dark:bg-green-950/40 text-green-600"
+                : "text-[#999] hover:bg-[#e0e0e0] dark:hover:bg-[#2a2a2a] hover:text-[var(--fg-primary)]"
+            )}>
+            {copied ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </Tip>
+      </div>
+
+      {/* ── Expanded full text ── */}
+      {expanded && (
+        <p className="px-3 pb-3 pt-0.5 text-[12.5px] text-[var(--fg-secondary)] leading-relaxed break-words border-t border-[var(--bg-base)]">
+          {text}
+        </p>
+      )}
+    </div>
+  );
+}
+
+
 function PromptCard({
   prompt,
   copied,
   onCopy,
+  onCopyQuiz,
   onEdit,
   onDelete,
 }: {
   prompt: Prompt;
-  copied: boolean;
+  copied: string | null;
   onCopy: () => void;
+  onCopyQuiz: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const isLong = prompt.content.length > 200;
-  const displayContent = isLong && !expanded ? prompt.content.slice(0, 200) + "…" : prompt.content;
+  const isCopied = copied === prompt.id;
+  const isQuizCopied = copied === `quiz-${prompt.id}`;
 
   return (
-    <div className="rounded-[8px] bg-[var(--bg-base)] p-4 group/card"
+    <div className="rounded-[8px] bg-[var(--bg-base)] group/card"
       style={{ boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-start gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold text-[var(--fg-primary)] mb-2">{prompt.title}</p>
-          <p className="text-[13px] text-[var(--fg-secondary)] leading-relaxed whitespace-pre-wrap break-words">
-            {displayContent}
-          </p>
-          {isLong && (
-            <button onClick={() => setExpanded(v => !v)}
-              className="mt-1.5 text-[12px] text-[hsl(217,91%,60%)] hover:underline cursor-pointer">
-              {expanded ? "Thu gọn" : "Xem thêm"}
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/card:opacity-100 transition-opacity">
-          <Tip label="Chỉnh sửa">
-            <button onClick={onEdit}
-              className="flex items-center justify-center w-7 h-7 rounded-[6px] text-[#999] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] hover:text-[#666] dark:hover:text-[#ccc] transition-colors cursor-pointer">
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
-          </Tip>
-          <Tip label="Xóa prompt">
-            <button onClick={onDelete}
-              className="flex items-center justify-center w-7 h-7 rounded-[6px] text-[#999] hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 transition-colors cursor-pointer">
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          </Tip>
-          <Tip label={copied ? "Đã copy!" : "Copy prompt"}>
-            <button onClick={onCopy}
-              className={cn(
-                "flex items-center justify-center w-7 h-7 rounded-[6px] transition-all cursor-pointer",
-                copied
-                  ? "bg-green-50 dark:bg-green-950/30 text-green-600"
-                  : "text-[#999] bg-[var(--bg-elevated)] hover:text-[var(--fg-primary)]"
-              )}>
-              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-            </button>
-          </Tip>
-        </div>
+
+      {/* ── Header: title + edit/delete ── */}
+      <div className="flex items-center gap-2 px-4 pt-3.5 pb-3">
+        <p className="text-[13px] font-semibold text-[var(--fg-primary)] flex-1 min-w-0 truncate">
+          {prompt.title}
+        </p>
+        {!prompt.isDefault && (
+          <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/card:opacity-100 transition-opacity">
+            <Tip label="Chỉnh sửa">
+              <button onClick={onEdit}
+                className="flex items-center justify-center w-6 h-6 rounded-[5px] text-[#999] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] hover:text-[#666] dark:hover:text-[#ccc] transition-colors cursor-pointer">
+                <Pencil className="w-3 h-3" />
+              </button>
+            </Tip>
+            <Tip label="Xóa prompt">
+              <button onClick={onDelete}
+                className="flex items-center justify-center w-6 h-6 rounded-[5px] text-[#999] hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 transition-colors cursor-pointer">
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </Tip>
+          </div>
+        )}
+      </div>
+
+      {/* ── Sections — always visible ── */}
+      <div className="px-4 pb-4 space-y-2">
+        <PromptSection
+          label="Prompt"
+          text={prompt.content}
+          copyLabel="Copy prompt"
+          copied={isCopied}
+          onCopy={onCopy}
+        />
+        {prompt.quizPrompt && (
+          <PromptSection
+            label="Quiz Prompt"
+            icon={<ClipboardCheck className="w-2.5 h-2.5" />}
+            text={prompt.quizPrompt}
+            copyLabel="Copy Quiz Prompt"
+            copied={isQuizCopied}
+            onCopy={onCopyQuiz}
+          />
+        )}
       </div>
     </div>
   );
 }
+

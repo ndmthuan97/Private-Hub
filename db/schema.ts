@@ -1,8 +1,9 @@
 import {
   pgTable, uuid, text, jsonb, integer,
-  timestamp, numeric, unique,
+  timestamp, numeric, unique, boolean,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+
 
 // ─── Budget ───────────────────────────────────────────────────
 
@@ -74,3 +75,19 @@ export type BudgetCategory    = typeof budgetCategories.$inferSelect;
 export type NewBudgetCategory = typeof budgetCategories.$inferInsert;
 export type BudgetEntry       = typeof budgetEntries.$inferSelect;
 export type NewBudgetEntry    = typeof budgetEntries.$inferInsert;
+
+// ─── NotebookLM Prompts ───────────────────────────────────────
+
+// User-created prompts for NotebookLM; default prompts live in code, not DB
+export const nlmPrompts = pgTable("nlm_prompts", {
+  id:          uuid("id").primaryKey().defaultRandom(),
+  title:       text("title").notNull(),
+  content:     text("content").notNull(),
+  quizPrompt:  text("quiz_prompt"),             // optional follow-up quiz prompt
+  sortOrder:   integer("sort_order").notNull().default(0),
+  createdAt:   timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:   timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type NlmPrompt    = typeof nlmPrompts.$inferSelect;
+export type NewNlmPrompt = typeof nlmPrompts.$inferInsert;
