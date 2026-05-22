@@ -55,11 +55,22 @@ export function EntryManager({ categories }: { categories: Category[] }) {
     finally { setSaving(false); }
   }
 
-  async function handleDelete(id: string) {
-    const r = await fetch(`/api/budget/${id}`, { method: "DELETE" });
-    const j = await r.json();
-    if (j.statusCode === 200) { toast.success("🗑️ Đã xóa"); setDetail(null); fetch$(); }
-    else toast.error(j.message);
+  function handleDelete(id: string) {
+    toast.warning("Xóa bản ghi phân bổ này? Hành động không thể hoàn tác.", {
+      action: {
+        label: "Xóa",
+        onClick: async () => {
+          try {
+            const r = await fetch(`/api/budget/${id}`, { method: "DELETE" });
+            const j = await r.json();
+            if (j.statusCode === 200) { toast.success("Đã xóa bản ghi"); setDetail(null); fetch$(); }
+            else toast.error(j.message);
+          } catch { toast.error("Lỗi kết nối"); }
+        },
+      },
+      cancel: { label: "Hủy", onClick: () => {} },
+      duration: 6000,
+    });
   }
 
   const filtered = entries

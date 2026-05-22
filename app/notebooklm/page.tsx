@@ -1,7 +1,10 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Plus, Copy, Check, Trash2, X, ExternalLink, BookOpen, Pencil, ClipboardCheck, Loader2 } from "lucide-react";
+import {
+  Plus, Copy, Check, Trash2, X, ExternalLink,
+  BookOpen, Pencil, ClipboardCheck, Loader2, RotateCcw,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -10,12 +13,16 @@ import { Tip } from "@/components/ui/tip";
 
 const NLM_URL = "https://notebooklm.google.com/";
 
-// Default prompts are always rendered from code — never stored in DB
-const DEFAULT_PROMPTS: Prompt[] = [
+// localStorage keys for default-prompt overrides
+const LS_OVERRIDES_KEY = "nlm_default_overrides";   // Record<id, Partial<Prompt>>
+const LS_HIDDEN_KEY    = "nlm_default_hidden";       // string[] of hidden default ids
+
+// Canonical default prompts — source-of-truth, never mutated
+const CANONICAL_DEFAULTS: Prompt[] = [
   {
     id: "default-1",
     title: "Email từ vựng ngẫu nhiên",
-    content: `Hôm nay hãy lấy ngẫu nhiên 10 từ mới trong file từ vựng này (ưu tiên các từ loại Động từ và Danh từ). Hãy viết cho tôi một đoạn Email công sở (chuẩn Part 7 TOEIC) bằng 100% tiếng Anh bao gồm 10 từ này. Phía sau mỗi từ vựng đó, hãy mở ngoặc đơn và ghi nghĩa tiếng Việt của nó (ví dụ: implement (thực hiện)).`,
+    content: `Hôm nay hãy lấy ngẫu nhiên 10 từ mới trong file từ vựng này (ưu tiên các từ loại Động từ và Danh từ). Hãy viết cho tôi một đoạn Email công sở (chuẩn Part 7 TOEIC) bằng 100% tiếng Anh bao gồm 10 từ này.`,
     quizPrompt: `The quiz must focus on all vocabulary words that appeared in the office email just generated — including the 10 selected words AND any other notable words from the email body. Test their meanings, correct usage in context, and synonyms. Questions should use fill-in-the-blank or choose-the-correct-meaning format with realistic workplace sentences.`,
     isDefault: true,
     sortOrder: -2,
@@ -25,7 +32,7 @@ const DEFAULT_PROMPTS: Prompt[] = [
   {
     id: "default-2",
     title: "Giải thích ngữ pháp + bài tập",
-    content: `Hãy tóm tắt cho tôi quy tắc cốt lõi nhất của chủ điểm ngữ pháp: '[Điền tên bài/chủ đề bạn muốn học, VD: Rút gọn mệnh đề quan hệ]'. Dùng ngôn ngữ bình dân, dễ hiểu nhất, tuyệt đối không dùng từ ngữ học thuật giáo điều. Sau đó, cho tôi 3 câu bài tập trắc nghiệm siêu ngắn để tôi test thử ngay xem có hiểu lý thuyết chưa nhé.`,
+    content: `Hãy tóm tắt cho tôi quy tắc cốt lõi nhất của chủ điểm ngữ pháp: '[Điền tên bài/chủ đề bạn muốn học, VD: Rút gọn mệnh đề quan hệ]'. Dùng ngôn ngữ bình dân, dễ hiểu nhất, tuyệt đối không dùng từ ngữ học thuật giáo điều. Sau đó, cho tôi 10 câu bài tập trắc nghiệm siêu ngắn để tôi test thử ngay xem có hiểu lý thuyết chưa nhé.`,
     quizPrompt: `The quiz must focus solely on the grammar topic just explained in the previous response. Questions must test whether I can correctly apply the grammar rule in real sentences — include tricky distractors that reveal common mistakes. Do not test unrelated grammar points.`,
     isDefault: true,
     sortOrder: -1,
@@ -45,22 +52,59 @@ interface Prompt {
   updatedAt: string;
 }
 
+// ── localStorage helpers ────────────────────────────────────────
+function loadOverrides(): Record<string, Partial<Prompt>> {
+  try { return JSON.parse(localStorage.getItem(LS_OVERRIDES_KEY) ?? "{}"); }
+  catch { return {}; }
+}
+function loadHidden(): string[] {
+  try { return JSON.parse(localStorage.getItem(LS_HIDDEN_KEY) ?? "[]"); }
+  catch { return []; }
+}
+function saveOverrides(v: Record<string, Partial<Prompt>>) {
+  localStorage.setItem(LS_OVERRIDES_KEY, JSON.stringify(v));
+}
+function saveHidden(v: string[]) {
+  localStorage.setItem(LS_HIDDEN_KEY, JSON.stringify(v));
+}
+
+// Apply per-id overrides on top of the canonical default list
+function applyOverrides(
+  overrides: Record<string, Partial<Prompt>>,
+  hidden: string[],
+): Prompt[] {
+  return CANONICAL_DEFAULTS
+    .filter(p => !hidden.includes(p.id))
+    .map(p => ({ ...p, ...(overrides[p.id] ?? {}) }));
+}
+
 export default function NotebookLMPage() {
-  const [customPrompts, setCustomPrompts] = useState<Prompt[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ title: "", content: "", quizPrompt: "" });
-  const [mounted, setMounted] = useState(false);
+  const [customPrompts, setCustomPrompts]   = useState<Prompt[]>([]);
+  const [defaultPrompts, setDefaultPrompts] = useState<Prompt[]>([]);
+  const [overrides, setOverrides]           = useState<Record<string, Partial<Prompt>>>({});
+  const [hiddenIds, setHiddenIds]           = useState<string[]>([]);
+  const [loading, setLoading]               = useState(true);
+  const [copied, setCopied]                 = useState<string | null>(null);
+  const [modalOpen, setModalOpen]           = useState(false);
+  const [editingId, setEditingId]           = useState<string | null>(null);
+  const [saving, setSaving]                 = useState(false);
+  const [form, setForm]                     = useState({ title: "", content: "", quizPrompt: "" });
+  const [mounted, setMounted]               = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
 
-  // All prompts shown: defaults first, then user-created sorted by sortOrder
-  const allPrompts = [...DEFAULT_PROMPTS, ...customPrompts];
+  const hasModifiedDefaults =
+    Object.keys(overrides).length > 0 || hiddenIds.length > 0;
 
+  const allPrompts = [...defaultPrompts, ...customPrompts];
+
+  // ── Bootstrap ────────────────────────────────────────────────
   useEffect(() => {
     setMounted(true);
+    const ov  = loadOverrides();
+    const hid = loadHidden();
+    setOverrides(ov);
+    setHiddenIds(hid);
+    setDefaultPrompts(applyOverrides(ov, hid));
     fetchPrompts();
   }, []);
 
@@ -70,7 +114,7 @@ export default function NotebookLMPage() {
 
   async function fetchPrompts() {
     try {
-      const res = await fetch("/api/notebooklm/prompts");
+      const res  = await fetch("/api/notebooklm/prompts");
       const json = await res.json();
       setCustomPrompts(json.data ?? []);
     } catch {
@@ -80,6 +124,7 @@ export default function NotebookLMPage() {
     }
   }
 
+  // ── Copy ─────────────────────────────────────────────────────
   function handleCopy(id: string, content: string, isQuiz = false) {
     navigator.clipboard.writeText(content).then(() => {
       setCopied(isQuiz ? `quiz-${id}` : id);
@@ -88,6 +133,7 @@ export default function NotebookLMPage() {
     });
   }
 
+  // ── Modal helpers ────────────────────────────────────────────
   function openAdd() {
     setEditingId(null);
     setForm({ title: "", content: "", quizPrompt: "" });
@@ -100,9 +146,10 @@ export default function NotebookLMPage() {
     setModalOpen(true);
   }
 
+  // ── Save (create / update custom OR override default) ────────
   async function handleSave() {
-    const title = form.title.trim();
-    const content = form.content.trim();
+    const title      = form.title.trim();
+    const content    = form.content.trim();
     const quizPrompt = form.quizPrompt.trim() || undefined;
     if (!title || !content) {
       toast.error("Vui lòng điền đủ tiêu đề và nội dung.");
@@ -111,9 +158,22 @@ export default function NotebookLMPage() {
 
     setSaving(true);
     try {
-      if (editingId) {
-        // Update existing custom prompt
-        const res = await fetch(`/api/notebooklm/prompts/${editingId}`, {
+      const isEditingDefault = editingId?.startsWith("default-");
+
+      if (isEditingDefault && editingId) {
+        // Store override in localStorage — no DB needed for built-in defaults
+        const newOverrides = {
+          ...overrides,
+          [editingId]: { title, content, quizPrompt: quizPrompt ?? null },
+        };
+        saveOverrides(newOverrides);
+        setOverrides(newOverrides);
+        setDefaultPrompts(applyOverrides(newOverrides, hiddenIds));
+        toast.success("Đã cập nhật prompt mặc định.");
+
+      } else if (editingId) {
+        // Update existing custom prompt via API
+        const res  = await fetch(`/api/notebooklm/prompts/${editingId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title, content, quizPrompt }),
@@ -122,9 +182,10 @@ export default function NotebookLMPage() {
         if (!res.ok) throw new Error(json.message);
         setCustomPrompts(prev => prev.map(p => p.id === editingId ? json.data : p));
         toast.success("Đã cập nhật prompt.");
+
       } else {
-        // Create new custom prompt
-        const res = await fetch("/api/notebooklm/prompts", {
+        // Create new custom prompt via API
+        const res  = await fetch("/api/notebooklm/prompts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title, content, quizPrompt }),
@@ -142,15 +203,48 @@ export default function NotebookLMPage() {
     }
   }
 
-  async function handleDelete(id: string) {
-    try {
-      const res = await fetch(`/api/notebooklm/prompts/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Xóa thất bại");
-      setCustomPrompts(prev => prev.filter(p => p.id !== id));
-      toast.success("Đã xóa prompt.");
-    } catch {
-      toast.error("Không xóa được prompt.");
-    }
+  // ── Delete (hide default / delete custom from DB) ────────────
+  function handleDelete(p: Prompt) {
+    const msg = p.isDefault
+      ? `Ẩn prompt mặc định "${p.title}"? Bạn có thể khôi phục sau.`
+      : `Xóa hẳn prompt "${p.title}"? Hành động này không thể hoàn tác.`;
+
+    toast.warning(msg, {
+      action: {
+        label: p.isDefault ? "Ẩn" : "Xóa",
+        onClick: async () => {
+          if (p.isDefault) {
+            // Hide the default prompt locally — just add to hidden list
+            const newHidden = [...hiddenIds, p.id];
+            saveHidden(newHidden);
+            setHiddenIds(newHidden);
+            setDefaultPrompts(applyOverrides(overrides, newHidden));
+            toast.success("Đã ẩn prompt mặc định.");
+            return;
+          }
+          try {
+            const res = await fetch(`/api/notebooklm/prompts/${p.id}`, { method: "DELETE" });
+            if (!res.ok) throw new Error("Xóa thất bại");
+            setCustomPrompts(prev => prev.filter(x => x.id !== p.id));
+            toast.success("Đã xóa prompt.");
+          } catch {
+            toast.error("Không xóa được prompt.");
+          }
+        },
+      },
+      cancel: { label: "Hủy", onClick: () => {} },
+      duration: 6000,
+    });
+  }
+
+  // ── Reset all default-prompt overrides ───────────────────────
+  function handleResetDefaults() {
+    saveOverrides({});
+    saveHidden([]);
+    setOverrides({});
+    setHiddenIds([]);
+    setDefaultPrompts(applyOverrides({}, []));
+    toast.success("Đã khôi phục prompt mặc định.");
   }
 
   function handleModalKeyDown(e: React.KeyboardEvent) {
@@ -186,9 +280,21 @@ export default function NotebookLMPage() {
       <main className="flex-1 px-5 md:px-8 py-6 max-w-3xl w-full mx-auto">
         {/* Toolbar */}
         <div className="flex items-center justify-between mb-5">
-          <p className="text-[13px] text-[var(--fg-muted)]">
-            {loading ? "Đang tải…" : `${allPrompts.length} prompt${allPrompts.length !== 1 ? "s" : ""}`}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-[13px] text-[var(--fg-muted)]">
+              {loading ? "Đang tải…" : `${allPrompts.length} prompt${allPrompts.length !== 1 ? "s" : ""}`}
+            </p>
+            {/* Reset button — only visible when defaults have been modified */}
+            {hasModifiedDefaults && (
+              <Tip label="Khôi phục prompt mặc định">
+                <button onClick={handleResetDefaults}
+                  className="flex items-center gap-1 h-6 px-2 rounded-[5px] text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer">
+                  <RotateCcw className="w-3 h-3" />
+                  Khôi phục mặc định
+                </button>
+              </Tip>
+            )}
+          </div>
           <Tip label="Thêm prompt mới">
             <button onClick={openAdd}
               className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 transition-opacity cursor-pointer">
@@ -216,7 +322,7 @@ export default function NotebookLMPage() {
                 onCopy={() => handleCopy(p.id, p.content)}
                 onCopyQuiz={() => p.quizPrompt && handleCopy(p.id, p.quizPrompt, true)}
                 onEdit={() => openEdit(p)}
-                onDelete={() => handleDelete(p.id)}
+                onDelete={() => handleDelete(p)}
               />
             ))}
 
@@ -307,6 +413,8 @@ export default function NotebookLMPage() {
   );
 }
 
+// ── PromptSection ─────────────────────────────────────────────────
+
 function PromptSection({
   label,
   icon,
@@ -378,6 +486,8 @@ function PromptSection({
 }
 
 
+// ── PromptCard ────────────────────────────────────────────────────
+
 function PromptCard({
   prompt,
   copied,
@@ -393,11 +503,11 @@ function PromptCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const isCopied = copied === prompt.id;
+  const isCopied     = copied === prompt.id;
   const isQuizCopied = copied === `quiz-${prompt.id}`;
 
   return (
-    <div className="rounded-[8px] bg-[var(--bg-base)] group/card"
+    <div className="rounded-[8px] bg-[var(--bg-base)]"
       style={{ boxShadow: "var(--shadow-card)" }}>
 
       {/* ── Header: title + edit/delete ── */}
@@ -405,22 +515,21 @@ function PromptCard({
         <p className="text-[13px] font-semibold text-[var(--fg-primary)] flex-1 min-w-0 truncate">
           {prompt.title}
         </p>
-        {!prompt.isDefault && (
-          <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/card:opacity-100 transition-opacity">
-            <Tip label="Chỉnh sửa">
-              <button onClick={onEdit}
-                className="flex items-center justify-center w-6 h-6 rounded-[5px] text-[#999] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] hover:text-[#666] dark:hover:text-[#ccc] transition-colors cursor-pointer">
-                <Pencil className="w-3 h-3" />
-              </button>
-            </Tip>
-            <Tip label="Xóa prompt">
-              <button onClick={onDelete}
-                className="flex items-center justify-center w-6 h-6 rounded-[5px] text-[#999] hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 transition-colors cursor-pointer">
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </Tip>
-          </div>
-        )}
+        {/* Action buttons — always visible for all prompts */}
+        <div className="flex items-center gap-0.5 shrink-0">
+          <Tip label="Chỉnh sửa">
+            <button onClick={onEdit}
+              className="flex items-center justify-center w-6 h-6 rounded-[5px] text-[#999] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] hover:text-[#666] dark:hover:text-[#ccc] transition-colors cursor-pointer">
+              <Pencil className="w-3 h-3" />
+            </button>
+          </Tip>
+          <Tip label={prompt.isDefault ? "Ẩn prompt này" : "Xóa prompt"}>
+            <button onClick={onDelete}
+              className="flex items-center justify-center w-6 h-6 rounded-[5px] text-[#999] hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 transition-colors cursor-pointer">
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </Tip>
+        </div>
       </div>
 
       {/* ── Sections — always visible ── */}
@@ -446,4 +555,3 @@ function PromptCard({
     </div>
   );
 }
-
