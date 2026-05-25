@@ -1,4 +1,4 @@
-import { getDb, vocabTopics } from '@/db'
+import { getDb, vocabTopics, vocabWords } from '@/db'
 import { eq } from 'drizzle-orm'
 import { ok, notFound, badRequest, serverError } from '@/lib/api-response'
 
@@ -45,6 +45,8 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   try {
     const db     = getDb()
     const { id } = await params
+    // Cascade: delete all words in this topic first
+    await db.delete(vocabWords).where(eq(vocabWords.topicId, id))
     await db.delete(vocabTopics).where(eq(vocabTopics.id, id))
     return ok(null, 'deleted')
   } catch (error) {

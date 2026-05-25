@@ -169,7 +169,7 @@ export default function VocabPage() {
   }
 
   return (
-    <div className="px-4 md:px-8 py-6 md:py-8 max-w-[1400px] mx-auto space-y-4">
+    <div className="px-4 md:px-8 py-6 md:py-8 space-y-4">
 
       {/* ── Page header ── */}
       <div>

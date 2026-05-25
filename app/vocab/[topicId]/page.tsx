@@ -7,7 +7,7 @@ import {
   ArrowLeft, Volume2, Plus, Loader2, GraduationCap,
   Pencil, Trash2, X, Check, ChevronDown, ChevronUp,
   Sparkles, AlertCircle, Table2, LayoutGrid, Search,
-  ChevronLeft, ChevronRight, ClipboardList,
+  ChevronLeft, ChevronRight, ClipboardList, CheckSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { speak } from '@/lib/tts'
@@ -45,7 +45,8 @@ const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
 }
 function typeStyle(t: string | null) {
   if (!t) return { bg: 'hsl(0,0%,0%,0.06)', text: '#888' }
-  return TYPE_COLORS[t.toLowerCase()] ?? { bg: 'hsl(0,0%,0%,0.06)', text: '#555' }
+  const match = t.toLowerCase().split(/[\/, ]+/).find(k => TYPE_COLORS[k])
+  return match ? TYPE_COLORS[match] : { bg: 'hsl(0,0%,0%,0.06)', text: '#555' }
 }
 function Chip({ label, bg, text }: { label: string; bg: string; text: string }) {
   return (
@@ -268,10 +269,13 @@ const PASTE_COLS = [
   { key: 'definitionEn',  label: 'Định nghĩa EN',  width: 220, mono: false },
   { key: 'example1En',    label: 'Ví dụ 1',        width: 260, mono: false },
   { key: 'example2En',    label: 'Ví dụ 2',        width: 260, mono: false },
+  { key: 'wordFamily',    label: 'Word Family',    width: 180, mono: false },
+  { key: 'synonyms',      label: 'Đồng nghĩa',     width: 180, mono: false },
+  { key: 'antonyms',      label: 'Trái nghĩa',     width: 180, mono: false },
 ] as const
 type ColKey = typeof PASTE_COLS[number]['key']
 type GridRow = Record<ColKey, string>
-const EMPTY_ROW = (): GridRow => ({ word: '', type: '', pronunciation: '', definitionVi: '', definitionEn: '', example1En: '', example2En: '' })
+const EMPTY_ROW = (): GridRow => ({ word: '', type: '', pronunciation: '', definitionVi: '', definitionEn: '', example1En: '', example2En: '', wordFamily: '', synonyms: '', antonyms: '' })
 
 function PasteImportModal({ topicId, onClose, onSaved }: { topicId: string; onClose: () => void; onSaved: (w: VocabWord[]) => void }) {
   const [rows, setRows]         = useState<GridRow[]>(() => Array.from({ length: 5 }, EMPTY_ROW))
@@ -536,39 +540,182 @@ function FlashcardView({ words, onEdit, onDelete }: { words: VocabWord[]; onEdit
   )
 }
 
+/* ─── Word Detail Modal ──────────────────────────────────────────── */
+function WordDetailModal({ word, onClose, onEdit, onDelete }: { word: VocabWord; onClose: () => void; onEdit: () => void; onDelete: () => void }) {
+  const ts = typeStyle(word.type)
+  const families = word.wordFamily?.split(',').map(s => s.trim()).filter(Boolean) ?? []
+  const synonyms = word.synonyms?.split(',').map(s => s.trim()).filter(Boolean)  ?? []
+  const antonyms = word.antonyms?.split(',').map(s => s.trim()).filter(Boolean)  ?? []
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-4" onClick={onClose}>
+      <div className="w-full max-w-3xl rounded-[12px] bg-white dark:bg-[#111] flex flex-col max-h-[90vh]" style={{ boxShadow: 'var(--shadow-card)' }} onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ boxShadow: 'rgba(0,0,0,0.06) 0 1px 0 0' }}>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="text-[20px] font-bold text-[#171717] dark:text-[#f5f5f5]">{word.word}</h2>
+            <button onClick={() => speak(word.word)} className="text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"><Volume2 className="h-4 w-4" /></button>
+            {word.type && <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: ts.bg, color: ts.text }}>{word.type}</span>}
+            {word.pronunciation && <span className="font-mono text-[13px] text-[#888]">{word.pronunciation}</span>}
+          </div>
+          <div className="flex gap-1 shrink-0">
+            <button onClick={onEdit} className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#bbb] hover:text-[#666] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer"><Pencil className="h-3.5 w-3.5" /></button>
+            <button onClick={onDelete} className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#bbb] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"><Trash2 className="h-3.5 w-3.5" /></button>
+            <div className="w-px h-4 bg-[#ebebeb] dark:bg-[#333] mx-1 my-auto" />
+            <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#bbb] hover:text-[#666] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer"><X className="h-3.5 w-3.5" /></button>
+          </div>
+        </div>
+        
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col md:flex-row gap-8">
+          {/* Left Column */}
+          <div className="flex-1 space-y-6">
+            {word.samplePhrase && (
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-widest text-[#bbb] mb-1.5">Cụm từ mẫu</p>
+                <p className="text-[14px] text-[#171717] dark:text-[#ccc] italic">{word.samplePhrase}</p>
+              </div>
+            )}
+            
+            <div className="grid sm:grid-cols-2 gap-4">
+              {word.definitionVi && (
+                <div>
+                  <p className="text-[10px] font-medium uppercase tracking-widest text-[#bbb] mb-1.5">🇻🇳 Định nghĩa</p>
+                  <p className="text-[14px] font-semibold text-[#171717] dark:text-[#f5f5f5] leading-relaxed">{word.definitionVi}</p>
+                </div>
+              )}
+              {word.definitionEn && (
+                <div>
+                  <p className="text-[10px] font-medium uppercase tracking-widest text-[#bbb] mb-1.5">🇬🇧 Definition</p>
+                  <p className="text-[14px] text-[#555] dark:text-[#aaa] italic leading-relaxed">{word.definitionEn}</p>
+                </div>
+              )}
+            </div>
+
+            {(word.example1En || word.example2En) && (
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-widest text-[#bbb] mb-3">Câu ví dụ</p>
+                <div className="space-y-4">
+                  {[{ en: word.example1En, vi: word.example1Vi, n: 1 }, { en: word.example2En, vi: word.example2Vi, n: 2 }]
+                    .filter(ex => ex.en).map(ex => (
+                      <div key={ex.n} className="flex gap-3">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#f0f0f0] dark:bg-[#222] text-[10px] font-medium text-[#999] shrink-0 mt-0.5">{ex.n}</span>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-[13px] text-[#333] dark:text-[#ccc]">{ex.en}</p>
+                            <button onClick={() => speak(ex.en!)} className="text-[#ddd] hover:text-[#999] transition-colors cursor-pointer shrink-0"><Volume2 className="h-3 w-3" /></button>
+                          </div>
+                          {ex.vi && <p className="text-[12px] text-[#aaa] mt-1">{ex.vi}</p>}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Right Column */}
+          <div className="w-full md:w-[240px] shrink-0 space-y-6">
+            {families.length > 0 && (
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-widest text-[#bbb] mb-2">Word Family</p>
+                <div className="flex flex-col gap-1.5">
+                  {families.map(f => <span key={f} className="text-[12px] text-[#555] dark:text-[#aaa] bg-[#fafafa] dark:bg-[#1a1a1a] px-2.5 py-1.5 rounded-[6px] border border-[#f0f0f0] dark:border-[#222]">{f}</span>)}
+                </div>
+              </div>
+            )}
+            
+            {synonyms.length > 0 && (
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-widest text-[#bbb] mb-2">Đồng nghĩa</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {synonyms.map(s => <Chip key={s} label={s} bg="hsl(160,84%,42%,0.08)" text="hsl(160,84%,28%)" />)}
+                </div>
+              </div>
+            )}
+            
+            {antonyms.length > 0 && (
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-widest text-[#bbb] mb-2">Trái nghĩa</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {antonyms.map(a => <Chip key={a} label={a} bg="hsl(0,84%,60%,0.08)" text="hsl(0,72%,42%)" />)}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ─── Table view ─────────────────────────────────────────────────── */
 const TABLE_PAGE = 15
 
-function TableView({ words, onEdit, onDelete }: { words: VocabWord[]; onEdit: (w: VocabWord) => void; onDelete: (id: string) => void }) {
+function TableView({ words, selected, onToggle, onToggleAll, onEdit, onDelete, onView }: {
+  words: VocabWord[];
+  selected: Set<string>;
+  onToggle: (id: string) => void;
+  onToggleAll: (ids: string[], checked: boolean) => void;
+  onEdit: (w: VocabWord) => void;
+  onDelete: (id: string) => void;
+  onView: (w: VocabWord) => void;
+}) {
   const [page, setPage] = useState(1)
   const totalPages = Math.max(1, Math.ceil(words.length / TABLE_PAGE))
   const paged      = words.slice((page - 1) * TABLE_PAGE, page * TABLE_PAGE)
+  const pagedIds    = paged.map(w => w.id)
+  const allPageSelected = pagedIds.length > 0 && pagedIds.every(id => selected.has(id))
 
   return (
     <div>
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-fixed">
           <thead>
             <tr className="bg-[#fafafa] dark:bg-[#1a1a1a]" style={{ boxShadow: 'rgba(0,0,0,0.06) 0px 1px 0px 0px' }}>
-              {['Từ / Cụm từ', 'Loại từ', 'Phiên âm', 'Định nghĩa VI', 'Định nghĩa EN', 'Ví dụ 1', ''].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888]">{h}</th>
-              ))}
+              <th className="w-10 px-3 py-3">
+                <input
+                  type="checkbox"
+                  checked={allPageSelected}
+                  onChange={e => onToggleAll(pagedIds, e.target.checked)}
+                  className="w-3.5 h-3.5 accent-[#171717] dark:accent-[#f5f5f5] cursor-pointer"
+                />
+              </th>
+              <th className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888] w-[14%]">Từ / Cụm từ</th>
+              <th className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888] w-[8%]">Loại từ</th>
+              <th className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888] w-[10%]">Phiên âm</th>
+              <th className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888]">Định nghĩa VI</th>
+              <th className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888]">Định nghĩa EN</th>
+              <th className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888]">Ví dụ 1</th>
+              <th className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888] w-[70px]"></th>
             </tr>
           </thead>
           <tbody>
             {paged.map(w => {
               const ts = typeStyle(w.type)
+              const isSelected = selected.has(w.id)
               return (
-                <tr key={w.id} className="group transition-colors hover:bg-[#fafafa] dark:hover:bg-white/[0.02]"
-                  style={{ boxShadow: 'rgba(0,0,0,0.04) 0px 1px 0px 0px' }}>
+                <tr key={w.id} className={cn('group transition-colors cursor-pointer', isSelected ? 'bg-blue-50/60 dark:bg-blue-950/20' : 'hover:bg-[#fafafa] dark:hover:bg-white/[0.02]')}
+                  style={{ boxShadow: 'rgba(0,0,0,0.04) 0px 1px 0px 0px' }}
+                  onClick={() => onView(w)}>
+                  {/* Checkbox */}
+                  <td className="w-10 px-3 py-3">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => onToggle(w.id)}
+                      onClick={e => e.stopPropagation()}
+                      className="w-3.5 h-3.5 accent-[#171717] dark:accent-[#f5f5f5] cursor-pointer"
+                    />
+                  </td>
                   {/* Word */}
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[14px] font-semibold text-[#171717] dark:text-[#f5f5f5] group-hover:text-[#0072f5] transition-colors">{w.word}</span>
-                      <button onClick={() => speak(w.word)} className="opacity-0 group-hover:opacity-100 text-[#ccc] hover:text-[#888] transition-all cursor-pointer"><Volume2 className="h-3 w-3" /></button>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[14px] font-semibold text-[#171717] dark:text-[#f5f5f5] group-hover:text-[#0072f5] transition-colors truncate">{w.word}</span>
+                      <button onClick={(e) => { e.stopPropagation(); speak(w.word); }} className="opacity-0 group-hover:opacity-100 text-[#ccc] hover:text-[#888] transition-all cursor-pointer shrink-0"><Volume2 className="h-3 w-3" /></button>
                     </div>
-                    {w.samplePhrase && <p className="text-[11px] text-[#bbb] italic truncate max-w-[160px] mt-0.5">{w.samplePhrase}</p>}
+                    {w.samplePhrase && <p className="text-[11px] text-[#bbb] italic truncate mt-0.5">{w.samplePhrase}</p>}
                   </td>
                   {/* Type */}
                   <td className="px-4 py-3">
@@ -576,25 +723,25 @@ function TableView({ words, onEdit, onDelete }: { words: VocabWord[]; onEdit: (w
                   </td>
                   {/* Pronunciation */}
                   <td className="px-4 py-3">
-                    {w.pronunciation && <span className="font-mono text-[12px] text-[#888]">{w.pronunciation}</span>}
+                    {w.pronunciation && <span className="font-mono text-[12px] text-[#888] truncate block">{w.pronunciation}</span>}
                   </td>
                   {/* Def VI */}
-                  <td className="px-4 py-3 max-w-[200px]">
-                    <p className="text-[13px] text-[#444] dark:text-[#bbb] line-clamp-2">{w.definitionVi}</p>
+                  <td className="px-4 py-3">
+                    <p className="text-[13px] text-[#444] dark:text-[#bbb] truncate">{w.definitionVi}</p>
                   </td>
                   {/* Def EN */}
-                  <td className="px-4 py-3 max-w-[200px]">
-                    <p className="text-[13px] text-[#666] dark:text-[#888] italic line-clamp-2">{w.definitionEn}</p>
+                  <td className="px-4 py-3">
+                    <p className="text-[13px] text-[#666] dark:text-[#888] italic truncate">{w.definitionEn}</p>
                   </td>
                   {/* Example */}
-                  <td className="px-4 py-3 max-w-[220px]">
-                    <p className="text-[12px] text-[#aaa] line-clamp-2">{w.example1En}</p>
+                  <td className="px-4 py-3">
+                    <p className="text-[12px] text-[#aaa] truncate">{w.example1En}</p>
                   </td>
                   {/* Actions */}
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => onEdit(w)} className="rounded-[6px] p-1.5 text-[#999] hover:bg-[#fafafa] hover:text-[#171717] dark:hover:bg-white/8 dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"><Pencil className="h-3.5 w-3.5" /></button>
-                      <button onClick={() => onDelete(w.id)} className="rounded-[6px] p-1.5 text-[#999] hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors cursor-pointer"><Trash2 className="h-3.5 w-3.5" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); onEdit(w); }} className="rounded-[6px] p-1.5 text-[#999] hover:bg-[#fafafa] hover:text-[#171717] dark:hover:bg-white/8 dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"><Pencil className="h-3.5 w-3.5" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); onDelete(w.id); }} className="rounded-[6px] p-1.5 text-[#999] hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors cursor-pointer"><Trash2 className="h-3.5 w-3.5" /></button>
                     </div>
                   </td>
                 </tr>
@@ -639,8 +786,11 @@ export default function VocabTopicPage({ params }: { params: Promise<{ topicId: 
   const [viewMode, setViewMode] = useState<'table' | 'flashcard'>('table')
 
   const [modal, setModal]               = useState<'add' | VocabWord | null>(null)
+  const [viewWord, setViewWord]         = useState<VocabWord | null>(null)
   const [showAiFill, setShowAiFill]     = useState(false)
   const [showPasteImport, setShowPasteImport] = useState(false)
+  const [selected, setSelected]               = useState<Set<string>>(new Set())
+  const [bulkDeleting, setBulkDeleting]       = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -676,14 +826,50 @@ export default function VocabTopicPage({ params }: { params: Promise<{ topicId: 
     try {
       await fetch(`/api/vocab/words/${id}`, { method: 'DELETE' })
       setWords(prev => prev.filter(w => w.id !== id))
+      setSelected(prev => { const n = new Set(prev); n.delete(id); return n })
       toast.success('Đã xóa từ')
     } catch { toast.error('Xóa thất bại') }
+  }
+
+  /* Bulk delete */
+  async function handleBulkDelete() {
+    if (selected.size === 0) return
+    const count = selected.size
+    if (!confirm(`Xóa ${count} từ đã chọn? Không thể hoàn tác.`)) return
+    setBulkDeleting(true)
+    try {
+      await Promise.all(
+        Array.from(selected).map(id =>
+          fetch(`/api/vocab/words/${id}`, { method: 'DELETE' })
+        )
+      )
+      setWords(prev => prev.filter(w => !selected.has(w.id)))
+      setSelected(new Set())
+      toast.success(`Đã xóa ${count} từ.`)
+    } catch { toast.error('Xóa hàng loạt thất bại.') }
+    finally { setBulkDeleting(false) }
+  }
+
+  function toggleSelect(id: string) {
+    setSelected(prev => {
+      const n = new Set(prev)
+      if (n.has(id)) n.delete(id); else n.add(id)
+      return n
+    })
+  }
+
+  function toggleSelectAll(ids: string[], checked: boolean) {
+    setSelected(prev => {
+      const n = new Set(prev)
+      for (const id of ids) { if (checked) n.add(id); else n.delete(id) }
+      return n
+    })
   }
 
   if (loading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-[#999]" /></div>
 
   return (
-    <div className="px-4 md:px-8 py-6 md:py-8 max-w-[1400px] mx-auto space-y-4">
+    <div className="px-4 md:px-8 py-6 md:py-8 space-y-4">
 
       {/* ── Back ── */}
       <button onClick={() => router.back()} className="flex items-center gap-1.5 text-[12px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer">
@@ -730,7 +916,7 @@ export default function VocabTopicPage({ params }: { params: Promise<{ topicId: 
             {/* Learn — icon only */}
             {words.length > 0 && (
               <Link href={`/vocab/learn?topic_id=${topicId}`} title="Học ngay"
-                className="hidden md:flex h-8 w-8 items-center justify-center rounded-[6px] text-[#666] dark:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#666] dark:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors"
                 style={{ boxShadow: 'var(--shadow-border)' }}>
                 <GraduationCap className="h-3.5 w-3.5" />
               </Link>
@@ -738,22 +924,23 @@ export default function VocabTopicPage({ params }: { params: Promise<{ topicId: 
 
             {/* AI Fill — icon only */}
             <button onClick={() => setShowAiFill(true)} title="AI Fill — tự điền định nghĩa, ví dụ"
-              className="hidden md:flex h-8 w-8 items-center justify-center rounded-[6px] cursor-pointer hover:opacity-90 transition-opacity"
+              className="flex h-8 w-8 items-center justify-center rounded-[6px] cursor-pointer hover:opacity-90 transition-opacity"
               style={{ background: 'hsl(271,91%,65%,0.10)', color: 'hsl(271,71%,50%)', boxShadow: 'var(--shadow-border)' }}>
               <Sparkles className="h-3.5 w-3.5" />
             </button>
 
             {/* Import — icon only */}
             <button onClick={() => setShowPasteImport(true)} title="Import hàng loạt từ Excel / Sheets"
-              className="hidden md:flex h-8 w-8 items-center justify-center rounded-[6px] cursor-pointer text-[#666] dark:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-[6px] cursor-pointer text-[#666] dark:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors"
               style={{ boxShadow: 'var(--shadow-border)' }}>
               <ClipboardList className="h-3.5 w-3.5" />
             </button>
 
-            {/* Add — keep label (primary CTA) */}
+            {/* Add */}
             <button onClick={() => setModal('add')}
               className="flex items-center gap-1.5 h-8 px-3 rounded-[6px] text-[12px] font-medium bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer">
-              <Plus className="h-3.5 w-3.5" /> Thêm từ
+              <Plus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Thêm từ</span>
             </button>
           </div>
         </div>
@@ -784,13 +971,76 @@ export default function VocabTopicPage({ params }: { params: Promise<{ topicId: 
             )}
           </div>
         ) : viewMode === 'table' ? (
-          <TableView words={filtered} onEdit={setModal} onDelete={handleDelete} />
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block">
+              <TableView words={filtered} selected={selected}
+                onToggle={toggleSelect} onToggleAll={toggleSelectAll}
+                onEdit={setModal} onDelete={handleDelete} onView={setViewWord} />
+            </div>
+            {/* Mobile card list */}
+            <div className="md:hidden divide-y divide-[#f0f0f0] dark:divide-[#1f1f1f]">
+              {filtered.map(w => {
+                const ts = typeStyle(w.type)
+                return (
+                  <div key={w.id}
+                    className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[#fafafa] dark:hover:bg-white/[0.02] transition-colors"
+                    onClick={() => setViewWord(w)}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14px] font-semibold text-[#171717] dark:text-[#f5f5f5] truncate">{w.word}</span>
+                        {w.type && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0" style={{ background: ts.bg, color: ts.text }}>{w.type}</span>}
+                      </div>
+                      {w.definitionVi && <p className="text-[12px] text-[#888] truncate mt-0.5">{w.definitionVi}</p>}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={e => { e.stopPropagation(); speak(w.word) }}
+                        className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#ccc] hover:text-[#888] transition-colors cursor-pointer">
+                        <Volume2 className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={e => { e.stopPropagation(); setModal(w) }}
+                        className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#ccc] hover:text-[#666] transition-colors cursor-pointer">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </>
         ) : (
           <FlashcardView words={filtered} onEdit={setModal} onDelete={handleDelete} />
         )}
       </div>
 
+      {/* Bulk delete floating bar */}
+      {selected.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 h-11 px-5 rounded-full bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717]"
+          style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.24)' }}>
+          <CheckSquare className="w-4 h-4 shrink-0" />
+          <span className="text-[13px] font-medium">{selected.size} đã chọn</span>
+          <div className="w-px h-5 bg-white/20 dark:bg-black/10" />
+          <button onClick={() => setSelected(new Set())}
+            className="text-[12px] text-white/70 dark:text-black/50 hover:text-white dark:hover:text-black transition-colors cursor-pointer">
+            Bỏ chọn
+          </button>
+          <button onClick={handleBulkDelete} disabled={bulkDeleting}
+            className="flex items-center gap-1.5 text-[12px] font-medium text-red-400 dark:text-red-500 hover:text-red-300 dark:hover:text-red-400 transition-colors cursor-pointer disabled:opacity-50">
+            {bulkDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            Xóa
+          </button>
+        </div>
+      )}
+
       {/* Modals */}
+      {viewWord && (
+        <WordDetailModal
+          word={viewWord}
+          onClose={() => setViewWord(null)}
+          onEdit={() => { setModal(viewWord); setViewWord(null); }}
+          onDelete={() => { handleDelete(viewWord.id); setViewWord(null); }}
+        />
+      )}
       {modal && (
         <WordFormModal topicId={topicId} initial={modal === 'add' ? undefined : modal}
           onClose={() => setModal(null)} onSaved={handleSaved} />
