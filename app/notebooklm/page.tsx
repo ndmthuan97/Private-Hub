@@ -3,13 +3,11 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   Plus, Copy, Check, Trash2, X, ExternalLink,
-  BookOpen, Pencil, ClipboardCheck, Loader2,
+  Pencil, ClipboardCheck, Loader2,
   Folder, FolderOpen, ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { Tip } from "@/components/ui/tip";
 
 const NLM_URL = "https://notebooklm.google.com/";
@@ -237,33 +235,39 @@ function RenameFolderDialog({
 
 /* ── Item row inside folder ────────────────────────────────────────── */
 function PromptRow({
-  title,
-  content,
-  copyKey,
+  prompt,
   copied,
   onCopy,
   onEdit,
 }: {
-  title: string;
-  content: string;
-  copyKey: string;
+  prompt: Prompt;
   copied: string | null;
   onCopy: () => void;
-  onEdit?: () => void;
+  onEdit: () => void;
 }) {
-  const isCopied = copied === copyKey;
+  const isCopied = copied === prompt.id;
+  const preview  = prompt.content.replace(/^#+\s*/gm, "").replace(/\*\*|__|_|\*|`/g, "").replace(/\n+/g, " ").trim();
+  const date     = new Date(prompt.createdAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
 
   return (
-    <div className="group flex items-start gap-3 px-3 py-2.5 rounded-[7px] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] transition-colors">
+    <div className="group flex items-center gap-3 px-4 py-2.5 rounded-[7px] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] transition-colors">
       {/* Icon */}
-      <div className="shrink-0 w-6 h-6 rounded-[5px] flex items-center justify-center bg-[#f0f0f0] dark:bg-[#222] mt-0.5">
+      <div className="shrink-0 w-6 h-6 rounded-[5px] flex items-center justify-center bg-[#f0f0f0] dark:bg-[#222]">
         <ClipboardCheck className="w-3 h-3 text-[#999]" />
       </div>
 
-      {/* Content — full width, single line truncated */}
-      <p className="flex-1 min-w-0 text-[13px] text-[#171717] dark:text-[#f5f5f5] truncate">
-        {content.replace(/^#+\s*/gm, "").replace(/\*\*|__|_|\*|`/g, "").replace(/\n+/g, " ")}
-      </p>
+      {/* Title — clickable, copies on click */}
+      <button onClick={onCopy} className="flex-1 min-w-0 text-left cursor-pointer">
+        <span className="text-[13px] font-medium text-[#171717] dark:text-[#f5f5f5] truncate block group-hover:text-blue-500 transition-colors">
+          {preview}
+        </span>
+      </button>
+
+      {/* Desktop metadata */}
+      <div className="hidden md:flex items-center gap-3 shrink-0">
+        <span className="text-[11px] text-[#bbb] truncate max-w-[200px]">{preview.slice(0, 60)}</span>
+        <span className="text-[11px] text-[#bbb] tabular-nums w-[72px] text-right">{date}</span>
+      </div>
 
       {/* Actions — visible on row hover */}
       <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -279,15 +283,13 @@ function PromptRow({
             {isCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
           </button>
         </Tip>
-        {onEdit && (
-          <Tip label="Chỉnh sửa">
-            <button onClick={onEdit}
-              className="flex h-6 w-6 items-center justify-center rounded-[4px] text-[#bbb] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
-              style={{ boxShadow: "var(--shadow-border)" }}>
-              <Pencil className="w-3 h-3" />
-            </button>
-          </Tip>
-        )}
+        <Tip label="Chỉnh sửa">
+          <button onClick={onEdit}
+            className="flex h-6 w-6 items-center justify-center rounded-[4px] text-[#bbb] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
+            style={{ boxShadow: "var(--shadow-border)" }}>
+            <Pencil className="w-3 h-3" />
+          </button>
+        </Tip>
       </div>
     </div>
   );
@@ -386,9 +388,7 @@ function FolderSection({
             items.map(p => (
               <PromptRow
                 key={p.id}
-                title="Prompt"
-                content={p.content}
-                copyKey={p.id}
+                prompt={p}
                 copied={copied}
                 onCopy={() => onCopy(p.id, p.content)}
                 onEdit={() => onEdit(p)}
@@ -523,48 +523,38 @@ export default function NotebookLMPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[var(--bg-base)] pt-14 md:pt-0">
-      {/* ── Top bar ─────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-10 bg-[var(--bg-base)] px-5 md:px-8"
-        style={{ boxShadow: "rgba(0,0,0,0.06) 0px 1px 0px 0px" }}>
-        <div className="flex items-center gap-3 h-14">
-          <Link href="/"
-            className="flex items-center justify-center w-7 h-7 rounded-[6px] text-[#999] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] hover:text-[#666] dark:hover:text-[#ccc] transition-colors shrink-0">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <BookOpen className="w-4 h-4 shrink-0" style={{ color: "hsl(217,91%,60%)" }} />
-            <h1 className="text-[15px] font-semibold text-[var(--fg-primary)] truncate">NotebookLM</h1>
-            <span className="text-[12px] text-[var(--fg-muted)] hidden sm:inline">— Kho prompt</span>
-          </div>
-          <Tip label="Mở NotebookLM">
-            <a href={NLM_URL} target="_blank" rel="noopener noreferrer"
-              className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#666] dark:text-[#888] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] transition-colors shrink-0"
-              style={{ boxShadow: "var(--shadow-border)" }}>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-          </Tip>
-        </div>
-      </header>
+      {/* ── Main content area ──────────────────────────────────── */}
+      <div className="flex-1 px-5 md:px-8 py-6 w-full">
 
-      {/* ── Content ─────────────────────────────────────────────── */}
-      <main className="flex-1 px-5 md:px-8 py-6 w-full">
-        <div className="flex items-center justify-end mb-5">
-          <Tip label="Thêm prompt mới">
-            <button onClick={() => openAdd()}
-              className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 transition-opacity cursor-pointer">
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-          </Tip>
+        {/* Header — Strategy-style: title + action buttons */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-[22px] font-bold tracking-tight text-[#171717] dark:text-[#f5f5f5]">NotebookLM</h1>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Tip label="Mở NotebookLM">
+              <a href={NLM_URL} target="_blank" rel="noopener noreferrer"
+                className="flex h-9 w-9 items-center justify-center rounded-[7px] text-[#666] dark:text-[#888] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors shrink-0"
+                style={{ boxShadow: "var(--shadow-border)" }}>
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </Tip>
+            <Tip label="Thêm prompt mới">
+              <button onClick={() => openAdd()}
+                className="flex h-9 w-9 items-center justify-center rounded-[7px] bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer">
+                <Plus className="w-4 h-4" />
+              </button>
+            </Tip>
+          </div>
         </div>
 
-        {loading && (
-          <div className="flex items-center justify-center py-16 text-[var(--fg-muted)]">
-            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            <span className="text-[13px]">Đang tải prompts...</span>
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(n => (
+              <div key={n} className="h-16 rounded-[10px] bg-[#f5f5f5] dark:bg-[#1a1a1a] animate-pulse" />
+            ))}
           </div>
-        )}
-
-        {!loading && (
+        ) : (
           <div className="space-y-3">
             {groups.map(([title, items]) => (
               <FolderSection
@@ -580,13 +570,14 @@ export default function NotebookLMPage() {
               />
             ))}
             {prompts.length === 0 && (
-              <div className="text-center py-16 text-[var(--fg-muted)] text-[13px]">
-                Chưa có prompt nào. Nhấn <strong>+</strong> để thêm.
+              <div className="py-16 text-center">
+                <p className="text-[15px] font-medium text-[#999]">Chưa có prompt nào</p>
+                <p className="text-[13px] text-[#bbb] mt-1">Nhấn <strong>+</strong> để thêm prompt đầu tiên</p>
               </div>
             )}
           </div>
         )}
-      </main>
+      </div>
 
       {/* ── Prompt modal ─────────────────────────────────────────── */}
       {mounted && modalTarget !== null && createPortal(

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { Tip } from '@/components/ui/tip'
 
 interface VocabTopic {
   id:            string
@@ -184,11 +185,6 @@ export default function VocabPage() {
         <div className="flex items-center justify-between gap-3 px-6 py-4" style={{ boxShadow: 'rgba(0,0,0,0.06) 0px 1px 0px 0px' }}>
           <div className="flex items-center gap-2">
             <h2 className="text-[14px] font-semibold text-[#171717] dark:text-[#f5f5f5] tracking-tight">Danh sách chủ đề</h2>
-            {!loading && (
-              <span className="text-[11px] font-medium tabular-nums px-2 py-0.5 rounded-full bg-[#f5f5f5] dark:bg-[#1a1a1a] text-[#666] dark:text-[#888]">
-                {filtered.length}
-              </span>
-            )}
           </div>
           <div className="flex items-center gap-2">
             {/* Search */}
@@ -199,10 +195,12 @@ export default function VocabPage() {
                 className="pl-9 pr-3 h-8 w-64 text-[13px] rounded-[6px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5] outline-none placeholder:text-[#bbb]"
                 style={{ boxShadow: 'var(--shadow-border)' }} />
             </div>
-            <button onClick={() => setShowModal(true)}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-[6px] text-[12px] font-medium bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer">
-              <Plus className="h-3.5 w-3.5" /> Thêm chủ đề
-            </button>
+            <Tip label="Thêm chủ đề">
+              <button onClick={() => setShowModal(true)}
+                className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer">
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </Tip>
           </div>
         </div>
 
@@ -277,14 +275,18 @@ export default function VocabPage() {
                         {/* Actions */}
                         <td className="px-4 py-3.5" onClick={e => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => router.push(`/vocab/${t.id}`)}
-                              className="rounded-[6px] p-1.5 text-[#999] hover:bg-[#f0f7ff] hover:text-[#0072f5] dark:hover:bg-blue-900/20 transition-colors cursor-pointer" title="Xem">
-                              <ArrowRight className="h-3.5 w-3.5" />
-                            </button>
-                            <button onClick={e => handleDelete(t.id, e)} disabled={deleting === t.id}
-                              className="rounded-[6px] p-1.5 text-[#999] hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 transition-colors cursor-pointer disabled:opacity-40" title="Xóa">
-                              {deleting === t.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                            </button>
+                            <Tip label="Xem">
+                              <button onClick={() => router.push(`/vocab/${t.id}`)}
+                                className="rounded-[6px] p-1.5 text-[#999] hover:bg-[#f0f7ff] hover:text-[#0072f5] dark:hover:bg-blue-900/20 transition-colors cursor-pointer">
+                                <ArrowRight className="h-3.5 w-3.5" />
+                              </button>
+                            </Tip>
+                            <Tip label="Xóa">
+                              <button onClick={e => handleDelete(t.id, e)} disabled={deleting === t.id}
+                                className="rounded-[6px] p-1.5 text-[#999] hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 transition-colors cursor-pointer disabled:opacity-40">
+                                {deleting === t.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                              </button>
+                            </Tip>
                           </div>
                         </td>
                       </tr>

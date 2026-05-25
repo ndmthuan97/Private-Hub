@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/utils'
 import { speak } from '@/lib/tts'
 import { toast } from 'sonner'
+import { Tip } from '@/components/ui/tip'
 
 /* ─── Types ─────────────────────────────────────────────────────── */
 interface VocabWord {
@@ -882,7 +883,6 @@ export default function VocabTopicPage({ params }: { params: Promise<{ topicId: 
             <span className="text-[24px] shrink-0">{topic?.icon ?? '📖'}</span>
             <div className="min-w-0">
               <h1 className="text-[15px] font-semibold tracking-tight text-[#171717] dark:text-[#f5f5f5] truncate">{topic?.name}</h1>
-              <p className="text-[11px] text-[#999]">{filtered.length} từ</p>
             </div>
           </div>
 
@@ -899,45 +899,56 @@ export default function VocabTopicPage({ params }: { params: Promise<{ topicId: 
 
             {/* View toggle — icon only */}
             <div className="flex items-center rounded-[6px] overflow-hidden" style={{ boxShadow: 'var(--shadow-border)' }}>
-              <button onClick={() => setViewMode('table')} title="Chế độ bảng"
-                className={cn('flex h-8 w-8 items-center justify-center text-[12px] transition-colors cursor-pointer', viewMode === 'table' ? 'bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717]' : 'text-[#666] dark:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a]')}>
-                <Table2 className="h-3.5 w-3.5" />
-              </button>
-              <button onClick={() => setViewMode('flashcard')} title="Chế độ Flashcard"
-                className={cn('flex h-8 w-8 items-center justify-center text-[12px] transition-colors cursor-pointer', viewMode === 'flashcard' ? 'bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717]' : 'text-[#666] dark:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a]')}>
-                <LayoutGrid className="h-3.5 w-3.5" />
-              </button>
+              <Tip label="Bảng">
+                <button onClick={() => setViewMode('table')}
+                  className={cn('flex h-8 w-8 items-center justify-center text-[12px] transition-colors cursor-pointer', viewMode === 'table' ? 'bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717]' : 'text-[#666] dark:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a]')}>
+                  <Table2 className="h-3.5 w-3.5" />
+                </button>
+              </Tip>
+              <Tip label="Flashcard">
+                <button onClick={() => setViewMode('flashcard')}
+                  className={cn('flex h-8 w-8 items-center justify-center text-[12px] transition-colors cursor-pointer', viewMode === 'flashcard' ? 'bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717]' : 'text-[#666] dark:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a]')}>
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                </button>
+              </Tip>
             </div>
 
-            {/* Learn — icon only */}
+            {/* Learn */}
             {words.length > 0 && (
-              <Link href={`/vocab/learn?topic_id=${topicId}`} title="Học ngay"
-                className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#666] dark:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors"
-                style={{ boxShadow: 'var(--shadow-border)' }}>
-                <GraduationCap className="h-3.5 w-3.5" />
-              </Link>
+              <Tip label="Học ngay">
+                <Link href={`/vocab/learn?topic_id=${topicId}`}
+                  className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#666] dark:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors"
+                  style={{ boxShadow: 'var(--shadow-border)' }}>
+                  <GraduationCap className="h-3.5 w-3.5" />
+                </Link>
+              </Tip>
             )}
 
-            {/* AI Fill — icon only */}
-            <button onClick={() => setShowAiFill(true)} title="AI Fill — tự điền định nghĩa, ví dụ"
-              className="flex h-8 w-8 items-center justify-center rounded-[6px] cursor-pointer hover:opacity-90 transition-opacity"
-              style={{ background: 'hsl(271,91%,65%,0.10)', color: 'hsl(271,71%,50%)', boxShadow: 'var(--shadow-border)' }}>
-              <Sparkles className="h-3.5 w-3.5" />
-            </button>
+            {/* AI Fill */}
+            <Tip label="AI Fill">
+              <button onClick={() => setShowAiFill(true)}
+                className="flex h-8 w-8 items-center justify-center rounded-[6px] cursor-pointer hover:opacity-90 transition-opacity"
+                style={{ background: 'hsl(271,91%,65%,0.10)', color: 'hsl(271,71%,50%)', boxShadow: 'var(--shadow-border)' }}>
+                <Sparkles className="h-3.5 w-3.5" />
+              </button>
+            </Tip>
 
-            {/* Import — icon only */}
-            <button onClick={() => setShowPasteImport(true)} title="Import hàng loạt từ Excel / Sheets"
-              className="flex h-8 w-8 items-center justify-center rounded-[6px] cursor-pointer text-[#666] dark:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors"
-              style={{ boxShadow: 'var(--shadow-border)' }}>
-              <ClipboardList className="h-3.5 w-3.5" />
-            </button>
+            {/* Import */}
+            <Tip label="Import">
+              <button onClick={() => setShowPasteImport(true)}
+                className="flex h-8 w-8 items-center justify-center rounded-[6px] cursor-pointer text-[#666] dark:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors"
+                style={{ boxShadow: 'var(--shadow-border)' }}>
+                <ClipboardList className="h-3.5 w-3.5" />
+              </button>
+            </Tip>
 
             {/* Add */}
-            <button onClick={() => setModal('add')}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-[6px] text-[12px] font-medium bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer">
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Thêm từ</span>
-            </button>
+            <Tip label="Thêm từ">
+              <button onClick={() => setModal('add')}
+                className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer">
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </Tip>
           </div>
         </div>
 

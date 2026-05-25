@@ -941,7 +941,7 @@ function FolderSection({ folder, items, onAddItem, onRenameFolder, onDeleteFolde
           </span>
         </button>
 
-        <span className="text-[10px] text-[#bbb] tabular-nums shrink-0">{items.length}</span>
+
 
         {/* Action buttons — icon-only, visible on hover */}
         <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/header:opacity-100 transition-opacity">
@@ -1055,7 +1055,7 @@ function FolderView({ folder, items, folders, onBack, onReload, onView, onEdit, 
         </Tip>
         <FolderOpen className="w-4 h-4 text-amber-500 shrink-0" />
         <h1 className="flex-1 text-[20px] font-bold tracking-tight text-[#171717] dark:text-[#f5f5f5] truncate">{folder.name}</h1>
-        <span className="text-[12px] text-[#bbb] shrink-0">{items.length} items</span>
+
         <Tip label="Đổi tên folder">
           <button onClick={() => setRenameOpen(true)}
             className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#666] dark:text-[#888] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer"
@@ -1332,7 +1332,7 @@ export default function StrategyPage() {
               <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#f0f0f0] dark:border-[#1f1f1f]">
                 <ChevronRight className="w-3.5 h-3.5 text-[#ccc]" />
                 <span className="text-[11px] font-medium uppercase tracking-widest text-[#bbb]">Chưa phân loại</span>
-                <span className="text-[10px] text-[#bbb] tabular-nums">{rootItems.length}</span>
+
               </div>
               <div className="px-2 py-1">
                 {rootItems.map(item => (
