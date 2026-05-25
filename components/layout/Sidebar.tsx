@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { MessageCircle, Wallet, LayoutDashboard, LogOut, Sun, Moon, Map, Plus, Globe, X, Check, CalendarDays, PanelLeftClose, PanelLeftOpen, Menu, BookOpen } from "lucide-react";
+import { MessageCircle, Wallet, LayoutDashboard, LogOut, Sun, Moon, Map, Plus, Globe, X, Check, CalendarDays, Menu, BookOpen, BookA, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
 
 const NAV_ITEMS = [
   { href: "/",             label: "Tổng quan",         icon: LayoutDashboard, color: "#666" },
   { href: "/conversation", label: "Luyện Giao Tiếp",   icon: MessageCircle,   color: "hsl(160,84%,42%)" },
+  { href: "/vocab",        label: "Từ Vựng",           icon: BookA,           color: "hsl(239,84%,67%)" },
   { href: "/budget",       label: "Phân Bổ Ngân Sách", icon: Wallet,          color: "hsl(38,92%,52%)" },
   { href: "/strategy",     label: "Strategy",           icon: Map,             color: "hsl(262,83%,58%)" },
   { href: "/calendar",     label: "Calendar",           icon: CalendarDays,    color: "hsl(217,91%,60%)" },
@@ -145,7 +146,7 @@ export function Sidebar() {
       {/* ── Sidebar ────────────────────────────────────────── */}
       <aside
         className={cn(
-          "flex flex-col shrink-0 h-screen bg-white dark:bg-[#111] overflow-hidden z-50",
+          "relative flex flex-col shrink-0 h-screen bg-white dark:bg-[#111] overflow-visible z-50",
           // Mobile: fixed drawer, slides in/out
           "fixed inset-y-0 left-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
@@ -156,34 +157,38 @@ export function Sidebar() {
         )}
         style={{ width: expanded ? 224 : 52, boxShadow: "rgba(0,0,0,0.06) 1px 0 0 0" }}
       >
-        <div className="px-[13px] py-4 shrink-0" style={{ boxShadow: "rgba(0,0,0,0.06) 0px 1px 0px 0px" }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-[6px] flex items-center justify-center shrink-0" style={{ background: "hsl(25,95%,53%)" }}>
-              <span className="text-white text-[12px] font-bold">T</span>
+        {/* ── Floating edge toggle (desktop only) ── */}
+        <button
+          onClick={toggleSidebar}
+          className="hidden md:flex absolute top-1/2 -translate-y-1/2 -right-3.5 z-10 h-7 w-7 items-center justify-center rounded-full bg-white dark:bg-[#111] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
+          style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.10)' }}
+          title={expanded ? 'Thu gọn sidebar' : 'Mở rộng sidebar'}
+        >
+          {expanded
+            ? <ChevronLeft  className="h-3.5 w-3.5" />
+            : <ChevronRight className="h-3.5 w-3.5" />}
+        </button>
+        {/* Inner wrapper — clips overflowing nav content while letting the edge button escape aside */}
+        <div className="flex flex-col flex-1 overflow-hidden">
+          {/* Logo header */}
+          <div className="px-[13px] py-4 shrink-0" style={{ boxShadow: "rgba(0,0,0,0.06) 0px 1px 0px 0px" }}>
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-[6px] flex items-center justify-center shrink-0" style={{ background: "hsl(25,95%,53%)" }}>
+                <span className="text-white text-[12px] font-bold">T</span>
+              </div>
+              <span className="flex-1 text-[14px] font-semibold tracking-tight text-[#171717] dark:text-[#f5f5f5] whitespace-nowrap"
+                style={{ opacity: expanded ? 1 : 0, transition: "opacity 150ms ease" }}>
+                Private Hub
+              </span>
+              {/* Mobile close */}
+              <button onClick={() => setMobileOpen(false)}
+                className="md:hidden flex h-6 w-6 items-center justify-center rounded-[5px] text-[#bbb] hover:text-[#666] dark:hover:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer shrink-0">
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <span className="flex-1 text-[14px] font-semibold tracking-tight text-[#171717] dark:text-[#f5f5f5] whitespace-nowrap"
-              style={{ opacity: expanded ? 1 : 0, transition: "opacity 150ms ease" }}>
-              Private Hub
-            </span>
-            <button onClick={() => { toggleSidebar(); }}
-              className="flex h-6 w-6 items-center justify-center rounded-[5px] text-[#bbb] hover:text-[#666] dark:hover:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer shrink-0"
-              style={{ opacity: expanded ? 1 : 0, transition: "opacity 150ms ease" }}>
-              <PanelLeftClose className="w-3.5 h-3.5" />
-            </button>
-            <button onClick={() => setMobileOpen(false)}
-              className="md:hidden flex h-6 w-6 items-center justify-center rounded-[5px] text-[#bbb] hover:text-[#666] dark:hover:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer shrink-0">
-              <X className="w-3.5 h-3.5" />
-            </button>
           </div>
-        </div>
 
         <nav className="flex-1 px-[10px] py-3 space-y-0.5 overflow-hidden">
-          {!expanded && (
-            <button onClick={toggleSidebar}
-              className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#999] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] hover:text-[#666] dark:hover:text-[#bbb] transition-colors cursor-pointer mb-1">
-              <PanelLeftOpen className="w-4 h-4" />
-            </button>
-          )}
           {NAV_ITEMS.map(item => {
             const Icon     = item.icon;
             const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -276,6 +281,7 @@ export function Sidebar() {
           </button>
           {expanded && <p className="text-[10px] text-[#bbb] px-[10px] pt-1 whitespace-nowrap">Private Hub v1.1</p>}
         </div>
+        </div> {/* /inner wrapper */}
       </aside>
     </>
   );

@@ -1,4 +1,4 @@
-import { MessageCircle, Wallet, ArrowRight } from "lucide-react";
+import { MessageCircle, Wallet, BookA, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 const MODULES = [
@@ -11,6 +11,16 @@ const MODULES = [
     badge: "EN · JP",
     color: "hsl(160,84%,42%)",
     id: "module-conversation",
+  },
+  {
+    href: "/vocab",
+    icon: BookA,
+    emoji: "📚",
+    title: "Học Từ Vựng",
+    description: "Học từ vựng theo chủ đề với định nghĩa song ngữ, family word và câu ví dụ.",
+    badge: "SRS",
+    color: "hsl(239,84%,67%)",
+    id: "module-vocab",
   },
   {
     href: "/budget",

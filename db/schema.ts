@@ -1,6 +1,6 @@
 import {
   pgTable, uuid, text, jsonb, integer,
-  timestamp, numeric, unique, boolean,
+  timestamp, numeric, unique, boolean, real,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -91,3 +91,69 @@ export const nlmPrompts = pgTable("nlm_prompts", {
 
 export type NlmPrompt    = typeof nlmPrompts.$inferSelect;
 export type NewNlmPrompt = typeof nlmPrompts.$inferInsert;
+
+// ─── Vocabulary ───────────────────────────────────────────────
+
+export const vocabTopics = pgTable("vocab_topics", {
+  id:        uuid("id").primaryKey().defaultRandom(),
+  name:      text("name").notNull(),
+  slug:      text("slug").notNull().unique(),
+  icon:      text("icon").notNull().default("📖"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const vocabWords = pgTable("vocab_words", {
+  id:            uuid("id").primaryKey().defaultRandom(),
+  topicId:       uuid("topic_id").references(() => vocabTopics.id, { onDelete: "cascade" }),
+
+  // Core fields
+  word:          text("word").notNull(),          // the word or phrase
+  samplePhrase:  text("sample_phrase"),           // collocations / usage pattern
+  type:          text("type"),                    // noun | verb | adjective | adverb | phrase …
+  pronunciation: text("pronunciation"),           // IPA transcription
+
+  // Bilingual definitions (Cambridge-style)
+  definitionVi:  text("definition_vi"),
+  definitionEn:  text("definition_en"),
+
+  // Word family — comma-separated e.g. "sustain (v), sustainability (n)"
+  wordFamily:    text("word_family"),
+
+  // Synonyms / antonyms — comma-separated
+  synonyms:      text("synonyms"),
+  antonyms:      text("antonyms"),
+
+  // Example sentence pair 1
+  example1En:    text("example1_en"),
+  example1Vi:    text("example1_vi"),
+
+  // Example sentence pair 2
+  example2En:    text("example2_en"),
+  example2Vi:    text("example2_vi"),
+
+  // Soft-delete
+  deletedAt:     timestamp("deleted_at",  { withTimezone: true }),
+  createdAt:     timestamp("created_at",  { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:     timestamp("updated_at",  { withTimezone: true }).notNull().defaultNow(),
+
+  // ── SRS (Spaced Repetition) ──────────────────────────────────
+  nextReviewAt:   timestamp("next_review_at",  { withTimezone: true }).defaultNow(),
+  easeFactor:     real("ease_factor").default(2.5),
+  reviewInterval: integer("review_interval").default(0),
+  repetitions:    integer("repetitions").default(0),
+});
+
+export const vocabTopicsRelations = relations(vocabTopics, ({ many }) => ({
+  words: many(vocabWords),
+}));
+
+export const vocabWordsRelations = relations(vocabWords, ({ one }) => ({
+  topic: one(vocabTopics, { fields: [vocabWords.topicId], references: [vocabTopics.id] }),
+}));
+
+export type VocabTopic         = typeof vocabTopics.$inferSelect;
+export type NewVocabTopic      = typeof vocabTopics.$inferInsert;
+export type VocabWord          = typeof vocabWords.$inferSelect;
+export type NewVocabWord       = typeof vocabWords.$inferInsert;
+export type VocabTopicWithCount = VocabTopic & { word_count: number; learned_count: number };
