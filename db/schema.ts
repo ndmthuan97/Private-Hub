@@ -26,14 +26,17 @@ export const budgetEntries = pgTable("budget_entries", {
   month:       integer("month").notNull(),    // 1–12
   year:        integer("year").notNull(),
   totalAmount: numeric("total_amount", { precision: 15, scale: 2 }).notNull(),
-  // [{key, label, emoji, color, percentage, amount}]
+  // [{key, label, emoji, color, percentage, amount, spent?}]
   allocations: jsonb("allocations").notNull().default([]),
+  // History of each income deposit added to this month: [{amount, note, createdAt}]
+  deposits:    jsonb("deposits").notNull().default([]),
   note:        text("note").default(""),
   createdAt:   timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt:   timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   unique("budget_entries_month_year_unique").on(t.month, t.year),
 ]);
+
 
 // ─── Strategy Folders ────────────────────────────────────────
 

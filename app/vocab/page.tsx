@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   BookA, Plus, Loader2, X, Check, Search,
-  ArrowRight, ChevronLeft, ChevronRight, Pencil, Trash2,
+  ArrowRight, ChevronLeft, ChevronRight, Trash2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'

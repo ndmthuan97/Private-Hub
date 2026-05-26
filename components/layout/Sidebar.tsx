@@ -1,23 +1,44 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { MessageCircle, Wallet, LayoutDashboard, LogOut, Sun, Moon, Map, Plus, Globe, X, Check, CalendarDays, Menu, BookOpen, BookA, ChevronLeft, ChevronRight } from "lucide-react";
+import { MessageCircle, Wallet, LayoutDashboard, LogOut, Sun, Moon, Map, Plus, Globe, X, Check, CalendarDays, Menu, BookOpen, BookA, ChevronLeft, ChevronRight, Headphones } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
 
-const NAV_ITEMS = [
-  { href: "/",             label: "Tổng quan",         icon: LayoutDashboard, color: "#666" },
-  { href: "/conversation", label: "Luyện Giao Tiếp",   icon: MessageCircle,   color: "hsl(160,84%,42%)" },
-  { href: "/vocab",        label: "Từ Vựng",           icon: BookA,           color: "hsl(239,84%,67%)" },
-  { href: "/budget",       label: "Phân Bổ Ngân Sách", icon: Wallet,          color: "hsl(38,92%,52%)" },
-  { href: "/strategy",     label: "Strategy",           icon: Map,             color: "hsl(262,83%,58%)" },
-  { href: "/calendar",     label: "Calendar",           icon: CalendarDays,    color: "hsl(217,91%,60%)" },
-  { href: "/notebooklm",   label: "NotebookLM",         icon: BookOpen,        color: "hsl(217,91%,60%)" },
+type NavItem = { href: string; label: string; icon: typeof LayoutDashboard; color: string };
+type NavGroup = { label?: string; items: NavItem[] };
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    items: [
+      { href: "/", label: "Tổng quan", icon: LayoutDashboard, color: "#666" },
+    ],
+  },
+  {
+    label: "Học tập",
+    items: [
+      { href: "/conversation", label: "Luyện Giao Tiếp", icon: MessageCircle, color: "hsl(160,84%,42%)" },
+      { href: "/vocab",        label: "Từ Vựng",         icon: BookA,         color: "hsl(239,84%,67%)" },
+      { href: "/dictation",    label: "Daily Dictation",  icon: Headphones,    color: "hsl(160,84%,42%)" },
+    ],
+  },
+  {
+    label: "Quản lý",
+    items: [
+      { href: "/budget",   label: "Ngân Sách", icon: Wallet,      color: "hsl(38,92%,52%)" },
+      { href: "/strategy",  label: "Strategy",  icon: Map,         color: "hsl(262,83%,58%)" },
+      { href: "/calendar",  label: "Calendar",  icon: CalendarDays, color: "hsl(217,91%,60%)" },
+    ],
+  },
+  {
+    label: "Công cụ",
+    items: [
+      { href: "/notebooklm", label: "NotebookLM", icon: BookOpen, color: "hsl(217,91%,60%)" },
+    ],
+  },
 ];
 
-const DEFAULT_EXTERNAL = [
-  { href: "https://dailydictation.com/exercises", label: "Daily Dictation", color: "hsl(160,84%,42%)" },
-];
+const DEFAULT_EXTERNAL: ExternalItem[] = [];
 
 type ExternalItem = { href: string; label: string; color: string };
 
@@ -188,28 +209,37 @@ export function Sidebar() {
             </div>
           </div>
 
-        <nav className="flex-1 px-[10px] py-3 space-y-0.5 overflow-hidden">
-          {NAV_ITEMS.map(item => {
-            const Icon     = item.icon;
-            const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-            return (
-              <Link key={item.href} href={item.href}
-                className={cn(
-                  "flex items-center gap-2.5 px-[10px] py-2 rounded-[6px]",
-                  "text-[13px] font-medium leading-[1.43] whitespace-nowrap",
-                  "transition-colors duration-150 cursor-pointer",
-                  isActive
-                    ? "bg-[#f5f5f5] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5]"
-                    : "text-[#999] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] hover:text-[#666] dark:hover:text-[#bbb]"
-                )}>
-                <Icon className="w-4 h-4 shrink-0" style={{ color: isActive ? item.color : undefined }} />
-                <span style={{ opacity: expanded ? 1 : 0, transition: "opacity 150ms ease" }}>{item.label}</span>
-                {isActive && expanded && (
-                  <span className="ml-auto w-1.5 h-1.5 rounded-full shrink-0" style={{ background: item.color }} />
-                )}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 px-[10px] py-3 space-y-3 overflow-hidden">
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={gi} className={cn(gi > 0 && 'pt-2')} style={gi > 0 ? { boxShadow: 'rgba(0,0,0,0.06) 0px -1px 0px 0px inset' } : undefined}>
+              {group.label && expanded && (
+                <p className="px-[10px] pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-[#bbb] dark:text-[#555] whitespace-nowrap">{group.label}</p>
+              )}
+              <div className="space-y-0.5">
+                {group.items.map(item => {
+                  const Icon = item.icon;
+                  const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+                  return (
+                    <Link key={item.href} href={item.href}
+                      className={cn(
+                        'flex items-center gap-2.5 px-[10px] py-2 rounded-[6px]',
+                        'text-[13px] font-medium leading-[1.43] whitespace-nowrap',
+                        'transition-colors duration-150 cursor-pointer',
+                        isActive
+                          ? 'bg-[#f5f5f5] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5]'
+                          : 'text-[#999] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] hover:text-[#666] dark:hover:text-[#bbb]'
+                      )}>
+                      <Icon className="w-4 h-4 shrink-0" style={{ color: isActive ? item.color : undefined }} />
+                      <span style={{ opacity: expanded ? 1 : 0, transition: 'opacity 150ms ease' }}>{item.label}</span>
+                      {isActive && expanded && (
+                        <span className="ml-auto w-1.5 h-1.5 rounded-full shrink-0" style={{ background: item.color }} />
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
 
           <div className="pt-2 mt-2" style={{ boxShadow: "rgba(0,0,0,0.06) 0px -1px 0px 0px inset" }}>
             {allExternal.map(item => {

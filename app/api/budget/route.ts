@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/budget — tạo entry mới (hoặc overwrite nếu tháng/năm đã tồn tại)
+// POST /api/budget — create entry or accumulate into existing month/year entry
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as {
@@ -44,38 +44,66 @@ export async function POST(req: NextRequest) {
     }
 
     const db = getDb();
-
-    // Lấy categories hiện tại để tính allocation
     const cats = await db.select().from(budgetCategories).orderBy(budgetCategories.sortOrder);
-    const allocations = cats.map((c) => ({
-      key:        c.key,
-      label:      c.label,
-      emoji:      c.emoji,
-      color:      c.color,
-      percentage: parseFloat(String(c.percentage)),
-      amount:     Math.round((body.totalAmount * parseFloat(String(c.percentage))) / 100),
-    }));
 
-    // Upsert: nếu tháng/năm đã tồn tại thì update
+    // New deposit record to append to history
+    const newDeposit = {
+      amount:    body.totalAmount,
+      note:      body.note ?? "",
+      createdAt: new Date().toISOString(),
+    };
+
     const existing = await db
-      .select({ id: budgetEntries.id })
+      .select()
       .from(budgetEntries)
       .where(and(eq(budgetEntries.month, body.month), eq(budgetEntries.year, body.year)))
       .limit(1);
 
     let result;
     if (existing.length > 0) {
+      const current       = existing[0];
+      const prevTotal     = parseFloat(String(current.totalAmount));
+      const newTotal      = prevTotal + body.totalAmount;
+      const prevAllocs    = (current.allocations as Array<Record<string, unknown>>);
+      const prevDeposits  = (current.deposits as Array<Record<string, unknown>>) ?? [];
+
+      // Recalculate allocation amounts from new total; preserve existing spent values
+      const allocations = cats.map((c) => {
+        const prev    = prevAllocs.find((a) => a.key === c.key);
+        const spent   = prev?.spent ?? 0;
+        return {
+          key:        c.key,
+          label:      c.label,
+          emoji:      c.emoji,
+          color:      c.color,
+          percentage: parseFloat(String(c.percentage)),
+          amount:     Math.round((newTotal * parseFloat(String(c.percentage))) / 100),
+          spent,
+        };
+      });
+
       [result] = await db
         .update(budgetEntries)
         .set({
-          totalAmount: String(body.totalAmount),
+          totalAmount: String(newTotal),
           allocations,
-          note:        body.note ?? "",
+          deposits:    [...prevDeposits, newDeposit],
           updatedAt:   new Date(),
         })
-        .where(eq(budgetEntries.id, existing[0].id))
+        .where(eq(budgetEntries.id, current.id))
         .returning();
     } else {
+      // First deposit for this month — create new entry
+      const allocations = cats.map((c) => ({
+        key:        c.key,
+        label:      c.label,
+        emoji:      c.emoji,
+        color:      c.color,
+        percentage: parseFloat(String(c.percentage)),
+        amount:     Math.round((body.totalAmount * parseFloat(String(c.percentage))) / 100),
+        spent:      0,
+      }));
+
       [result] = await db
         .insert(budgetEntries)
         .values({
@@ -83,6 +111,7 @@ export async function POST(req: NextRequest) {
           year:        body.year,
           totalAmount: String(body.totalAmount),
           allocations,
+          deposits:    [newDeposit],
           note:        body.note ?? "",
         })
         .returning();
@@ -97,3 +126,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ statusCode: 500, message: "Server error", data: null, errors: null }, { status: 500 });
   }
 }
+

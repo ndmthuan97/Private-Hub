@@ -18,6 +18,7 @@ export function EntryManager({ categories }: { categories: Category[] }) {
   const [month, setMonth]     = useState(() => new Date().getMonth() + 1);
   const [year, setYear]       = useState(() => new Date().getFullYear());
   const [amount, setAmount]   = useState("");
+  const [note, setNote]       = useState("");
   const [saving, setSaving]   = useState(false);
 
   const [addOpen, setAddOpen] = useState(false);
@@ -46,11 +47,14 @@ export function EntryManager({ categories }: { categories: Category[] }) {
     try {
       const r = await fetch("/api/budget", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ month, year, totalAmount: num }),
+        body: JSON.stringify({ month, year, totalAmount: num, note }),
       });
       const j = await r.json();
-      if (j.statusCode === 201) { toast.success("✅ Đã lưu phân bổ"); setAmount(""); setAddOpen(false); fetch$(); }
-      else toast.error(j.message);
+      if (j.statusCode === 201) {
+        const isAccumulate = (j.data?.entry?.deposits?.length ?? 0) > 1;
+        toast.success(isAccumulate ? "✅ Đã cộng thêm vào phân bổ tháng này" : "✅ Đã lưu phân bổ");
+        setAmount(""); setNote(""); setAddOpen(false); fetch$();
+      } else toast.error(j.message);
     } catch { toast.error("Lỗi kết nối"); }
     finally { setSaving(false); }
   }
@@ -137,6 +141,15 @@ export function EntryManager({ categories }: { categories: Category[] }) {
                 <input type="text" inputMode="numeric" autoFocus
                   placeholder="VD: 10,000,000"
                   value={amount} onChange={e => setAmount(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleSave()}
+                  className="w-full h-10 px-3 text-[14px] rounded-[7px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5]"
+                  style={{ boxShadow: "var(--shadow-border)" }} />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium uppercase tracking-widest text-[#999] mb-1.5 block">Ghi chú đợt <span className="normal-case text-[#bbb]">(tuỳ chọn)</span></label>
+                <input type="text"
+                  placeholder="VD: Lương, Freelance, Thưởng..."
+                  value={note} onChange={e => setNote(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleSave()}
                   className="w-full h-10 px-3 text-[14px] rounded-[7px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5]"
                   style={{ boxShadow: "var(--shadow-border)" }} />
