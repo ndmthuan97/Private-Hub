@@ -7,26 +7,21 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { title, content, quizPrompt } = await req.json() as {
-    title: string;
-    content: string;
+  const { title, label, content, quizPrompt } = await req.json() as {
+    title?: string;
+    label?: string;
+    content?: string;
     quizPrompt?: string;
   };
-
-  if (!title?.trim() || !content?.trim()) {
-    return NextResponse.json(
-      { statusCode: 400, message: "title and content are required", data: null, errors: null },
-      { status: 400 }
-    );
-  }
 
   const db = getDb();
   const [row] = await db
     .update(nlmPrompts)
     .set({
-      title: title.trim(),
-      content: content.trim(),
-      quizPrompt: quizPrompt?.trim() || null,
+      ...(title   !== undefined && { title: title.trim() }),
+      ...(label   !== undefined && { label: label.trim() }),
+      ...(content !== undefined && { content: content.trim() }),
+      ...(quizPrompt !== undefined && { quizPrompt: quizPrompt?.trim() || null }),
       updatedAt: new Date(),
     })
     .where(eq(nlmPrompts.id, id))

@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import {
   Plus, Copy, Check, Trash2, X, ExternalLink,
   Pencil, ClipboardCheck, Loader2,
-  Folder, FolderOpen, ChevronDown,
+  Folder, FolderOpen, ChevronDown, Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ const NLM_URL = "https://notebooklm.google.com/";
 interface Prompt {
   id: string;
   title: string;
+  label: string;
   content: string;
   sortOrder: number;
   createdAt: string;
@@ -34,12 +35,13 @@ function PromptModal({
   defaultTitle?: string;
   allTitles: string[];
   onClose: () => void;
-  onSave: (id: string | null, data: { title: string; content: string }) => Promise<void>;
+  onSave: (id: string | null, data: { title: string; label: string; content: string }) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
 }) {
   const isEdit = !!initial;
   const [form, setForm]       = useState({
     title:      initial?.title      ?? defaultTitle ?? "",
+    label:      initial?.label      ?? "",
     content:    initial?.content    ?? "",
   });
   const [saving, setSaving]   = useState(false);
@@ -50,11 +52,12 @@ function PromptModal({
 
   async function handleSave() {
     const title      = form.title.trim();
+    const label      = form.label.trim();
     const content    = form.content.trim();
-    if (!title || !content) { toast.error("Tiêu đề và nội dung không được để trống."); return; }
+    if (!title || !content) { toast.error("Nhóm và nội dung không được để trống."); return; }
     setSaving(true);
     try {
-      await onSave(initial?.id ?? null, { title, content });
+      await onSave(initial?.id ?? null, { title, label, content });
       onClose();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Lưu thất bại."); }
     finally { setSaving(false); }
@@ -99,7 +102,7 @@ function PromptModal({
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           <div>
             <label className="block text-[11px] font-medium text-[#999] mb-1.5 uppercase tracking-widest">
-              Tiêu đề
+              Nhóm (Folder)
             </label>
             <input
               ref={titleRef}
@@ -113,6 +116,19 @@ function PromptModal({
             <datalist id="prompt-titles-dl">
               {allTitles.map(t => <option key={t} value={t} />)}
             </datalist>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-medium text-[#999] mb-1.5 uppercase tracking-widest">
+              Tiêu đề prompt
+            </label>
+            <input
+              placeholder="VD: Hôm nay hãy lấy ngẫu nhiên 10 từ mới..."
+              value={form.label}
+              onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
+              className="w-full h-10 px-3 text-[14px] rounded-[7px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5]"
+              style={{ boxShadow: "var(--shadow-border)" }}
+            />
           </div>
 
           <div>
@@ -239,15 +255,16 @@ function PromptRow({
   copied,
   onCopy,
   onEdit,
+  onView,
 }: {
   prompt: Prompt;
   copied: string | null;
   onCopy: () => void;
   onEdit: () => void;
+  onView: () => void;
 }) {
   const isCopied = copied === prompt.id;
   const preview  = prompt.content.replace(/^#+\s*/gm, "").replace(/\*\*|__|_|\*|`/g, "").replace(/\n+/g, " ").trim();
-  const date     = new Date(prompt.createdAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
 
   return (
     <div className="group flex items-center gap-3 px-4 py-2.5 rounded-[7px] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] transition-colors">
@@ -256,18 +273,23 @@ function PromptRow({
         <ClipboardCheck className="w-3 h-3 text-[#999]" />
       </div>
 
-      {/* Title — clickable, copies on click */}
+      {/* Label + content preview — clickable, copies on click */}
       <button onClick={onCopy} className="flex-1 min-w-0 text-left cursor-pointer">
-        <span className="text-[13px] font-medium text-[#171717] dark:text-[#f5f5f5] truncate block group-hover:text-blue-500 transition-colors">
-          {preview}
-        </span>
+        {prompt.label ? (
+          <>
+            <span className="text-[13px] font-medium text-[#171717] dark:text-[#f5f5f5] truncate block group-hover:text-blue-500 transition-colors">
+              {prompt.label}
+            </span>
+            <span className="text-[11px] text-[#999] truncate block mt-0.5">
+              {preview}
+            </span>
+          </>
+        ) : (
+          <span className="text-[13px] font-medium text-[#171717] dark:text-[#f5f5f5] truncate block group-hover:text-blue-500 transition-colors">
+            {preview}
+          </span>
+        )}
       </button>
-
-      {/* Desktop metadata */}
-      <div className="hidden md:flex items-center gap-3 shrink-0">
-        <span className="text-[11px] text-[#bbb] truncate max-w-[200px]">{preview.slice(0, 60)}</span>
-        <span className="text-[11px] text-[#bbb] tabular-nums w-[72px] text-right">{date}</span>
-      </div>
 
       {/* Actions — visible on row hover */}
       <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -281,6 +303,13 @@ function PromptRow({
             )}
             style={{ boxShadow: "var(--shadow-border)" }}>
             {isCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+          </button>
+        </Tip>
+        <Tip label="Xem chi tiết">
+          <button onClick={onView}
+            className="flex h-6 w-6 items-center justify-center rounded-[4px] text-[#bbb] hover:text-blue-500 transition-colors cursor-pointer"
+            style={{ boxShadow: "var(--shadow-border)" }}>
+            <Eye className="w-3 h-3" />
           </button>
         </Tip>
         <Tip label="Chỉnh sửa">
@@ -302,6 +331,7 @@ function FolderSection({
   copied,
   onCopy,
   onEdit,
+  onView,
   onAdd,
   onRename,
   onDeleteFolder,
@@ -311,6 +341,7 @@ function FolderSection({
   copied: string | null;
   onCopy: (id: string, content: string, isQuiz?: boolean) => void;
   onEdit: (p: Prompt) => void;
+  onView: (p: Prompt) => void;
   onAdd: () => void;
   onRename: () => void;
   onDeleteFolder: () => void;
@@ -392,11 +423,86 @@ function FolderSection({
                 copied={copied}
                 onCopy={() => onCopy(p.id, p.content)}
                 onEdit={() => onEdit(p)}
+                onView={() => onView(p)}
               />
             ))
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Detail dialog (read-only view) ────────────────────────────────── */
+function DetailDialog({
+  prompt,
+  onClose,
+  onCopy,
+  onEdit,
+  copied,
+}: {
+  prompt: Prompt;
+  onClose: () => void;
+  onCopy: () => void;
+  onEdit: () => void;
+  copied: string | null;
+}) {
+  const isCopied = copied === prompt.id;
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}
+      onKeyDown={e => e.key === "Escape" && onClose()}>
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-white dark:bg-[#111] rounded-[12px] flex flex-col max-h-[90vh] overflow-hidden"
+        style={{ boxShadow: "var(--shadow-card)" }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 shrink-0"
+          style={{ boxShadow: "rgba(0,0,0,0.06) 0 1px 0 0" }}>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-[#999]">{prompt.title}</p>
+            <p className="text-[18px] font-semibold text-[#171717] dark:text-[#f5f5f5] mt-0.5 truncate">
+              {prompt.label || "Xem chi tiết"}
+            </p>
+          </div>
+          <Tip label="Đóng">
+            <button onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
+              style={{ boxShadow: "var(--shadow-border)" }}>
+              <X className="w-4 h-4" />
+            </button>
+          </Tip>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          <div className="text-[13px] text-[#171717] dark:text-[#f5f5f5] leading-relaxed whitespace-pre-wrap break-words">
+            {prompt.content}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-4 shrink-0 grid grid-cols-2 gap-2"
+          style={{ boxShadow: "rgba(0,0,0,0.06) 0 -1px 0 0" }}>
+          <button onClick={onCopy}
+            className={cn(
+              "h-10 rounded-[7px] text-[13px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer",
+              isCopied
+                ? "text-green-500 bg-green-50 dark:bg-green-950/30"
+                : "text-[#666] dark:text-[#888] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a]"
+            )}
+            style={{ boxShadow: "var(--shadow-border)" }}>
+            {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            {isCopied ? "Đã copy!" : "Copy"}
+          </button>
+          <button onClick={onEdit}
+            className="h-10 rounded-[7px] text-[14px] font-medium flex items-center justify-center gap-1.5 bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer">
+            <Pencil className="w-3.5 h-3.5" />
+            Chỉnh sửa
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -408,6 +514,7 @@ export default function NotebookLMPage() {
   const [copied, setCopied]           = useState<string | null>(null);
   const [mounted, setMounted]         = useState(false);
   const [modalTarget, setModalTarget] = useState<null | "add" | Prompt>(null);
+  const [viewTarget, setViewTarget]   = useState<Prompt | null>(null);
   const [addDefaultTitle, setAddDefaultTitle] = useState("");
   const [renameTarget, setRenameTarget]       = useState<string | null>(null);
 
@@ -434,7 +541,7 @@ export default function NotebookLMPage() {
   /* Save — handles both create and update */
   async function handleSave(
     id: string | null,
-    data: { title: string; content: string }
+    data: { title: string; label: string; content: string }
   ) {
     if (id) {
       const res  = await fetch(`/api/notebooklm/prompts/${id}`, {
@@ -564,6 +671,7 @@ export default function NotebookLMPage() {
                 copied={copied}
                 onCopy={handleCopy}
                 onEdit={p => setModalTarget(p)}
+                onView={p => setViewTarget(p)}
                 onAdd={() => openAdd(title)}
                 onRename={() => setRenameTarget(title)}
                 onDeleteFolder={() => handleDeleteGroup(title)}
@@ -598,6 +706,18 @@ export default function NotebookLMPage() {
           currentName={renameTarget}
           onClose={() => setRenameTarget(null)}
           onSave={newName => handleRenameGroup(renameTarget, newName)}
+        />,
+        document.body
+      )}
+
+      {/* ── Detail dialog ────────────────────────────────────────── */}
+      {mounted && viewTarget !== null && createPortal(
+        <DetailDialog
+          prompt={viewTarget}
+          onClose={() => setViewTarget(null)}
+          onCopy={() => handleCopy(viewTarget.id, viewTarget.content)}
+          onEdit={() => { setViewTarget(null); setModalTarget(viewTarget); }}
+          copied={copied}
         />,
         document.body
       )}

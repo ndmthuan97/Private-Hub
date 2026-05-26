@@ -85,6 +85,7 @@ export type NewBudgetEntry    = typeof budgetEntries.$inferInsert;
 export const nlmPrompts = pgTable("nlm_prompts", {
   id:          uuid("id").primaryKey().defaultRandom(),
   title:       text("title").notNull(),
+  label:       text("label").notNull().default(""),
   content:     text("content").notNull(),
   quizPrompt:  text("quiz_prompt"),             // optional follow-up quiz prompt
   sortOrder:   integer("sort_order").notNull().default(0),

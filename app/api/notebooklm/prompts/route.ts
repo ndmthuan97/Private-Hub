@@ -12,8 +12,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { title, content, quizPrompt } = await req.json() as {
+  const { title, label, content, quizPrompt } = await req.json() as {
     title: string;
+    label?: string;
     content: string;
     quizPrompt?: string;
   };
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
     .insert(nlmPrompts)
     .values({
       title: title.trim(),
+      label: label?.trim() || "",
       content: content.trim(),
       quizPrompt: quizPrompt?.trim() || null,
     })
