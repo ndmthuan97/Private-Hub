@@ -5,7 +5,15 @@ import { useRouter } from 'next/navigation'
 import {
   BookA, Plus, Loader2, X, Check, Search,
   ArrowRight, ChevronLeft, ChevronRight, Trash2,
+  Globe, Code, Music, Video, Image, FileText, Database, Cloud,
+  ShoppingBag, Gamepad2, GraduationCap, Heart, Star, Rocket, Zap,
+  Coffee, Briefcase, Palette, Newspaper, Link as LinkIcon, BookOpen,
+  Camera, MessageCircle, Mail, Map, Calculator, Headphones,
+  Shield, Terminal, Home, Settings, Users, TrendingUp, BarChart3,
+  Wrench, Cpu, Smartphone, Monitor, Wifi, Lock, Dumbbell, Plane,
+  Utensils, FlaskConical, Hash, Landmark, Scale, Wallet, PenLine,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { Tip } from '@/components/ui/tip'
@@ -21,50 +29,128 @@ interface VocabTopic {
   learned_count: number
 }
 
-/* ─── Icon auto-suggest ─────────────────────────────────────────── */
-const ICON_MAP: Array<{ keywords: string[]; icon: string }> = [
-  { keywords: ['business', 'work', 'office', 'corporate', 'kinh doanh', 'công việc'], icon: '💼' },
-  { keywords: ['travel', 'trip', 'vacation', 'du lịch', 'đi lại'],                   icon: '✈️' },
-  { keywords: ['food', 'eat', 'cook', 'kitchen', 'ăn', 'nấu', 'đồ ăn'],             icon: '🍽️' },
-  { keywords: ['tech', 'technology', 'it', 'computer', 'code', 'software'],          icon: '💻' },
-  { keywords: ['health', 'medical', 'body', 'sức khỏe', 'y tế', 'cơ thể'],          icon: '🏥' },
-  { keywords: ['nature', 'environment', 'climate', 'eco', 'thiên nhiên', 'môi trường'], icon: '🌿' },
-  { keywords: ['sport', 'fitness', 'gym', 'exercise', 'thể thao', 'vận động'],      icon: '⚽' },
-  { keywords: ['music', 'song', 'âm nhạc', 'bài hát'],                               icon: '🎵' },
-  { keywords: ['art', 'design', 'draw', 'nghệ thuật', 'thiết kế'],                   icon: '🎨' },
-  { keywords: ['science', 'physics', 'chemistry', 'khoa học', 'vật lý', 'hóa học'], icon: '🔬' },
-  { keywords: ['math', 'number', 'toán', 'số học'],                                   icon: '🔢' },
-  { keywords: ['history', 'culture', 'lịch sử', 'văn hóa'],                          icon: '🏛️' },
-  { keywords: ['law', 'legal', 'pháp luật', 'luật'],                                  icon: '⚖️' },
-  { keywords: ['finance', 'money', 'bank', 'tài chính', 'tiền', 'ngân hàng'],        icon: '💰' },
-  { keywords: ['education', 'school', 'học', 'trường', 'giáo dục'],                  icon: '🎓' },
-  { keywords: ['family', 'home', 'house', 'gia đình', 'nhà'],                        icon: '🏠' },
-  { keywords: ['emotion', 'feeling', 'cảm xúc', 'tình cảm'],                         icon: '❤️' },
-  { keywords: ['animal', 'pet', 'động vật', 'thú cưng'],                              icon: '🐾' },
-  { keywords: ['daily', 'routine', 'everyday', 'hàng ngày', 'thường ngày'],          icon: '📅' },
-  { keywords: ['idiom', 'phrase', 'expression', 'thành ngữ', 'cụm từ'],              icon: '💬' },
-  { keywords: ['academic', 'ielts', 'toeic', 'toefl', 'gre', 'sat'],                 icon: '📝' },
-  { keywords: ['news', 'media', 'politics', 'tin tức', 'chính trị', 'báo'],          icon: '📰' },
-  { keywords: ['recruitment', 'hr', 'hiring', 'tuyển dụng', 'nhân sự'],              icon: '🧑‍💼' },
+/* ─── Lucide icon registry — synced with Sidebar ICON_MAP ───────── */
+const LUCIDE_ICONS: Record<string, LucideIcon> = {
+  Globe, Code, Music, Video, Image, FileText, Database, Cloud,
+  ShoppingBag, Gamepad2, GraduationCap, Heart, Star, Rocket, Zap,
+  Coffee, Briefcase, Palette, Newspaper, Link: LinkIcon, BookOpen,
+  Camera, MessageCircle, Mail, Map, Calculator, Headphones,
+  Shield, Terminal, Home, Settings, Users, TrendingUp, BarChart3,
+  Wrench, Cpu, Smartphone, Monitor, Wifi, Lock, Dumbbell, Plane,
+  Utensils, FlaskConical, Hash, Landmark, Scale, Wallet, BookA, PenLine,
+}
+
+/* Ordered list for the picker grid */
+const ICON_PICKER_LIST: Array<{ name: string; label: string }> = [
+  { name: 'BookA',        label: 'Book' },
+  { name: 'BookOpen',     label: 'Reading' },
+  { name: 'Globe',        label: 'Global' },
+  { name: 'Briefcase',    label: 'Business' },
+  { name: 'Plane',        label: 'Travel' },
+  { name: 'Utensils',     label: 'Food' },
+  { name: 'Code',         label: 'Tech' },
+  { name: 'Headphones',   label: 'Listen' },
+  { name: 'Dumbbell',     label: 'Sport' },
+  { name: 'Music',        label: 'Music' },
+  { name: 'Palette',      label: 'Art' },
+  { name: 'FlaskConical', label: 'Science' },
+  { name: 'Hash',         label: 'Math' },
+  { name: 'Landmark',     label: 'History' },
+  { name: 'Scale',        label: 'Law' },
+  { name: 'Wallet',       label: 'Finance' },
+  { name: 'GraduationCap', label: 'Edu' },
+  { name: 'Home',         label: 'Family' },
+  { name: 'Heart',        label: 'Emotion' },
+  { name: 'MessageCircle', label: 'Idiom' },
+  { name: 'PenLine',      label: 'Academic' },
+  { name: 'Newspaper',    label: 'News' },
+  { name: 'Users',        label: 'HR' },
+  { name: 'Shield',       label: 'Security' },
+  { name: 'Cpu',          label: 'Hardware' },
+  { name: 'Cloud',        label: 'Cloud' },
+  { name: 'Database',     label: 'Data' },
+  { name: 'Terminal',     label: 'CLI' },
+  { name: 'Smartphone',   label: 'Mobile' },
+  { name: 'Camera',       label: 'Photo' },
+  { name: 'Video',        label: 'Video' },
+  { name: 'Image',        label: 'Image' },
+  { name: 'Mail',         label: 'Email' },
+  { name: 'Calculator',   label: 'Calc' },
+  { name: 'Map',          label: 'Map' },
+  { name: 'Star',         label: 'Star' },
+  { name: 'Rocket',       label: 'Launch' },
+  { name: 'Zap',          label: 'Fast' },
+  { name: 'TrendingUp',   label: 'Growth' },
+  { name: 'BarChart3',    label: 'Analytics' },
+  { name: 'Coffee',       label: 'Coffee' },
+  { name: 'ShoppingBag',  label: 'Shop' },
+  { name: 'Gamepad2',     label: 'Game' },
+  { name: 'Wifi',         label: 'Network' },
+  { name: 'Lock',         label: 'Security' },
+  { name: 'Wrench',       label: 'Tools' },
+  { name: 'Monitor',      label: 'Screen' },
+  { name: 'FileText',     label: 'Docs' },
 ]
-const DEFAULT_ICON = '📖'
+
+/* ─── Keyword → icon name mapping (synced with Sidebar icons) ───── */
+const SUGGEST_MAP: Array<{ keywords: string[]; icon: string }> = [
+  { keywords: ['business', 'work', 'office', 'corporate', 'kinh doanh', 'công việc'], icon: 'Briefcase' },
+  { keywords: ['travel', 'trip', 'vacation', 'du lịch', 'đi lại'],                   icon: 'Plane' },
+  { keywords: ['food', 'eat', 'cook', 'kitchen', 'ăn', 'nấu', 'đồ ăn', 'cuisine'],  icon: 'Utensils' },
+  { keywords: ['tech', 'technology', 'it', 'computer', 'code', 'software', 'programming'], icon: 'Code' },
+  { keywords: ['health', 'medical', 'body', 'sức khỏe', 'y tế', 'cơ thể'],          icon: 'Heart' },
+  { keywords: ['nature', 'environment', 'climate', 'eco', 'thiên nhiên', 'môi trường'], icon: 'Globe' },
+  { keywords: ['sport', 'fitness', 'gym', 'exercise', 'thể thao', 'vận động'],      icon: 'Dumbbell' },
+  { keywords: ['music', 'song', 'âm nhạc', 'bài hát'],                               icon: 'Music' },
+  { keywords: ['art', 'design', 'draw', 'nghệ thuật', 'thiết kế'],                   icon: 'Palette' },
+  { keywords: ['science', 'physics', 'chemistry', 'khoa học', 'vật lý', 'hóa học'], icon: 'FlaskConical' },
+  { keywords: ['math', 'number', 'toán', 'số học'],                                   icon: 'Hash' },
+  { keywords: ['history', 'culture', 'lịch sử', 'văn hóa'],                          icon: 'Landmark' },
+  { keywords: ['law', 'legal', 'pháp luật', 'luật'],                                  icon: 'Scale' },
+  { keywords: ['finance', 'money', 'bank', 'tài chính', 'tiền', 'ngân hàng'],        icon: 'Wallet' },
+  { keywords: ['education', 'school', 'học', 'trường', 'giáo dục'],                  icon: 'GraduationCap' },
+  { keywords: ['family', 'home', 'house', 'gia đình', 'nhà'],                        icon: 'Home' },
+  { keywords: ['emotion', 'feeling', 'cảm xúc', 'tình cảm'],                         icon: 'Heart' },
+  { keywords: ['animal', 'pet', 'động vật', 'thú cưng'],                              icon: 'Star' },
+  { keywords: ['daily', 'routine', 'everyday', 'hàng ngày', 'thường ngày'],          icon: 'BookOpen' },
+  { keywords: ['idiom', 'phrase', 'expression', 'thành ngữ', 'cụm từ'],              icon: 'MessageCircle' },
+  { keywords: ['academic', 'ielts', 'toeic', 'toefl', 'gre', 'sat'],                 icon: 'PenLine' },
+  { keywords: ['news', 'media', 'politics', 'tin tức', 'chính trị', 'báo'],          icon: 'Newspaper' },
+  { keywords: ['recruitment', 'hr', 'hiring', 'tuyển dụng', 'nhân sự'],              icon: 'Users' },
+  { keywords: ['security', 'password', 'bảo mật', 'an toàn'],                        icon: 'Shield' },
+  { keywords: ['data', 'database', 'sql', 'dữ liệu'],                                icon: 'Database' },
+  { keywords: ['cloud', 'server', 'hosting', 'aws', 'azure'],                        icon: 'Cloud' },
+  { keywords: ['mobile', 'app', 'android', 'ios', 'điện thoại'],                     icon: 'Smartphone' },
+  { keywords: ['game', 'gaming', 'trò chơi'],                                         icon: 'Gamepad2' },
+  { keywords: ['shopping', 'ecommerce', 'mua sắm'],                                   icon: 'ShoppingBag' },
+]
+const DEFAULT_ICON = 'BookA'
+
 function suggestIcon(name: string): string {
   const lower = name.toLowerCase()
-  for (const e of ICON_MAP) { if (e.keywords.some(k => lower.includes(k))) return e.icon }
+  for (const e of SUGGEST_MAP) {
+    if (e.keywords.some(k => lower.includes(k))) return e.icon
+  }
   return DEFAULT_ICON
+}
+
+/** Resolve icon name → Lucide component, fallback to BookA */
+function resolveIcon(name: string): LucideIcon {
+  return LUCIDE_ICONS[name] ?? BookA
 }
 
 /* ─── New Topic Modal ───────────────────────────────────────────── */
 function NewTopicModal({ onClose, onCreated }: { onClose: () => void; onCreated: (t: VocabTopic) => void }) {
-  const [name, setName]       = useState('')
-  const [slug, setSlug]       = useState('')
-  const [icon, setIcon]       = useState(DEFAULT_ICON)
+  const [name, setName]             = useState('')
+  const [slug, setSlug]             = useState('')
+  const [icon, setIcon]             = useState(DEFAULT_ICON)
   const [iconEdited, setIconEdited] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading]       = useState(false)
 
   function handleNameChange(v: string) {
     setName(v)
     setSlug(v.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))
+    // Auto-suggest icon only when user hasn't manually picked one
     if (!iconEdited) setIcon(suggestIcon(v))
   }
 
@@ -81,6 +167,8 @@ function NewTopicModal({ onClose, onCreated }: { onClose: () => void; onCreated:
     finally { setLoading(false) }
   }
 
+  const SelectedIcon = resolveIcon(icon)
+
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-4">
       <div className="w-full max-w-sm rounded-[10px] bg-white dark:bg-[#111] p-6 space-y-4" style={{ boxShadow: 'var(--shadow-card)' }}>
@@ -89,12 +177,7 @@ function NewTopicModal({ onClose, onCreated }: { onClose: () => void; onCreated:
           <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#bbb] hover:text-[#666] dark:hover:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer"><X className="h-3.5 w-3.5" /></button>
         </div>
         <div className="space-y-3">
-          <div>
-            <label className="block text-[11px] font-medium uppercase tracking-widest text-[#999] mb-1.5">Icon</label>
-            <input value={icon} onChange={e => { setIcon(e.target.value); setIconEdited(true) }}
-              className="w-16 h-9 text-center text-[22px] rounded-[6px] bg-[#fafafa] dark:bg-[#1a1a1a] outline-none"
-              style={{ boxShadow: 'var(--shadow-border)' }} />
-          </div>
+          {/* Name input — drives icon auto-suggest */}
           <div>
             <label className="block text-[11px] font-medium uppercase tracking-widest text-[#999] mb-1.5">Tên chủ đề</label>
             <input value={name} onChange={e => handleNameChange(e.target.value)} autoFocus
@@ -103,12 +186,50 @@ function NewTopicModal({ onClose, onCreated }: { onClose: () => void; onCreated:
               className="w-full h-9 px-3 text-[13px] rounded-[6px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5] outline-none placeholder:text-[#bbb]"
               style={{ boxShadow: 'var(--shadow-border)' }} />
           </div>
+          {/* Slug */}
           <div>
             <label className="block text-[11px] font-medium uppercase tracking-widest text-[#999] mb-1.5">Slug</label>
             <input value={slug} onChange={e => setSlug(e.target.value)}
               placeholder="business-english"
               className="w-full h-9 px-3 text-[13px] font-mono rounded-[6px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5] outline-none placeholder:text-[#bbb]"
               style={{ boxShadow: 'var(--shadow-border)' }} />
+          </div>
+          {/* Icon picker — synced with Sidebar ICON_MAP */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] font-medium uppercase tracking-widest text-[#999]">Icon</label>
+              {/* Active icon preview */}
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-[5px] bg-[#f5f5f5] dark:bg-[#1a1a1a]">
+                <SelectedIcon className="h-3.5 w-3.5 text-[hsl(239,84%,67%)]" />
+                <span className="text-[11px] text-[#666] dark:text-[#888] font-mono">{icon}</span>
+              </div>
+            </div>
+            {/* Grid picker */}
+            <div
+              className="grid gap-1 p-2 rounded-[8px] bg-[#fafafa] dark:bg-[#1a1a1a] overflow-y-auto"
+              style={{ gridTemplateColumns: 'repeat(8, 1fr)', maxHeight: 168, boxShadow: 'var(--shadow-border)' }}
+            >
+              {ICON_PICKER_LIST.map(({ name: iconName, label }) => {
+                const Icon = resolveIcon(iconName)
+                const isSelected = icon === iconName
+                return (
+                  <Tip key={iconName} label={label}>
+                    <button
+                      type="button"
+                      onClick={() => { setIcon(iconName); setIconEdited(true) }}
+                      className={cn(
+                        'flex items-center justify-center w-full aspect-square rounded-[5px] transition-all duration-100 cursor-pointer',
+                        isSelected
+                          ? 'bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717]'
+                          : 'text-[#999] hover:bg-white dark:hover:bg-[#272727] hover:text-[#444] dark:hover:text-[#ccc]'
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </button>
+                  </Tip>
+                )
+              })}
+            </div>
           </div>
         </div>
         <div className="flex gap-2 pt-1">
@@ -246,7 +367,10 @@ export default function VocabPage() {
                         style={{ boxShadow: 'rgba(0,0,0,0.04) 0px 1px 0px 0px' }}
                         onClick={() => router.push(`/vocab/${t.id}`)}>
                         {/* Icon */}
-                        <td className="px-4 py-3.5 text-xl">{t.icon ?? '📖'}</td>
+                        <td className="px-4 py-3.5">
+                          {(() => { const I = resolveIcon(t.icon ?? DEFAULT_ICON); return <I className="h-5 w-5 text-[#666] dark:text-[#888]" /> })()
+                          }
+                        </td>
                         {/* Name */}
                         <td className="px-4 py-3.5">
                           <p className="text-[14px] font-semibold text-[#171717] dark:text-[#f5f5f5] group-hover:text-[#0072f5] transition-colors">{t.name}</p>
@@ -303,7 +427,7 @@ export default function VocabPage() {
                 return (
                   <div key={t.id} onClick={() => router.push(`/vocab/${t.id}`)}
                     className="flex items-center gap-3 px-5 py-4 cursor-pointer hover:bg-[#fafafa] dark:hover:bg-white/[0.02] transition-colors">
-                    <span className="text-[20px] shrink-0">{t.icon ?? '📖'}</span>
+                    {(() => { const I = resolveIcon(t.icon ?? DEFAULT_ICON); return <I className="h-5 w-5 shrink-0 text-[#666] dark:text-[#888]" /> })()}
                     <div className="flex-1 min-w-0">
                       <p className="text-[14px] font-semibold text-[#171717] dark:text-[#f5f5f5] truncate">{t.name}</p>
                       <div className="flex items-center gap-2 mt-1">
