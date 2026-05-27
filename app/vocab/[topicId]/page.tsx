@@ -456,48 +456,54 @@ function FlashcardView({ words }: { words: VocabWord[] }) {
         style={{ boxShadow: 'var(--shadow-card)' }}>
 
         {/* Header: word + nav */}
-        <div className="px-4 py-3 flex items-center justify-between gap-3"
-          style={{ boxShadow: 'rgba(0,0,0,0.05) 0 1px 0 0' }}>
-          <div className="flex items-center gap-2 min-w-0">
-            <h2 className="text-[20px] font-bold text-[#171717] dark:text-[#f5f5f5] tracking-tight truncate">{word.word}</h2>
-            <button onClick={() => speak(word.word)}
-              className="text-[#bbb] hover:text-[#666] dark:hover:text-[#aaa] transition-colors cursor-pointer shrink-0">
-              <Volume2 className="h-3.5 w-3.5" />
-            </button>
-            {word.type && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0" style={{ background: ts.bg, color: ts.text }}>{word.type}</span>}
-            {word.pronunciation && <span className="font-mono text-[11px] text-[#888] shrink-0">{word.pronunciation}</span>}
+        <div className="px-4 py-3" style={{ boxShadow: 'rgba(0,0,0,0.05) 0 1px 0 0' }}>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <h2 className="text-[18px] font-bold text-[#171717] dark:text-[#f5f5f5] tracking-tight truncate">{word.word}</h2>
+              <button onClick={() => speak(word.word)}
+                className="text-[#bbb] hover:text-[#666] dark:hover:text-[#aaa] transition-colors cursor-pointer shrink-0">
+                <Volume2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <button onClick={() => go(-1)} disabled={idx === 0}
+                className="flex h-7 w-7 items-center justify-center rounded-[5px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] disabled:opacity-20 transition-colors cursor-pointer">
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              <span className="text-[11px] text-[#999] tabular-nums text-center">{idx + 1}/{words.length}</span>
+              <button onClick={() => go(1)} disabled={idx === words.length - 1}
+                className="flex h-7 w-7 items-center justify-center rounded-[5px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] disabled:opacity-20 transition-colors cursor-pointer">
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <button onClick={() => go(-1)} disabled={idx === 0}
-              className="flex h-7 w-7 items-center justify-center rounded-[5px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] disabled:opacity-20 transition-colors cursor-pointer">
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </button>
-            <span className="text-[11px] text-[#999] tabular-nums w-12 text-center">{idx + 1}/{words.length}</span>
-            <button onClick={() => go(1)} disabled={idx === words.length - 1}
-              className="flex h-7 w-7 items-center justify-center rounded-[5px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] disabled:opacity-20 transition-colors cursor-pointer">
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
+          {/* Type + pronunciation — second row */}
+          {(word.type || word.pronunciation) && (
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              {word.type && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: ts.bg, color: ts.text }}>{word.type}</span>}
+              {word.pronunciation && <span className="font-mono text-[11px] text-[#888]">{word.pronunciation}</span>}
+            </div>
+          )}
         </div>
 
         {/* Body */}
-        <div className="px-4 py-3 space-y-2.5">
+        <div className="px-4 py-3 space-y-2.5 min-w-0">
           {/* Collocations */}
           {word.samplePhrase && (
-            <p className="text-[11px] text-[#999] italic">📝 {word.samplePhrase}</p>
+            <p className="text-[11px] text-[#999] italic break-words">📝 {word.samplePhrase}</p>
           )}
 
           {/* Definitions */}
           {word.definitionVi && (
-            <div className="flex gap-2 items-baseline">
+            <div className="flex gap-2 items-baseline min-w-0">
               <span className="text-[10px] font-medium text-[#bbb] shrink-0 mt-px">VI</span>
-              <p className="text-[13px] font-semibold text-[#171717] dark:text-[#f5f5f5] leading-snug">{word.definitionVi}</p>
+              <p className="text-[13px] font-semibold text-[#171717] dark:text-[#f5f5f5] leading-snug break-words min-w-0">{word.definitionVi}</p>
             </div>
           )}
           {word.definitionEn && (
-            <div className="flex gap-2 items-baseline">
+            <div className="flex gap-2 items-baseline min-w-0">
               <span className="text-[10px] font-medium text-[#bbb] shrink-0 mt-px">EN</span>
-              <p className="text-[12px] text-[#666] dark:text-[#aaa] italic leading-snug">{word.definitionEn}</p>
+              <p className="text-[12px] text-[#666] dark:text-[#aaa] italic leading-snug break-words min-w-0">{word.definitionEn}</p>
             </div>
           )}
 
@@ -506,12 +512,12 @@ function FlashcardView({ words }: { words: VocabWord[] }) {
             <div className="space-y-1.5 pt-1 border-t border-[#f0f0f0] dark:border-[#1a1a1a]">
               {examples.map(ex => (
                 <div key={ex.n}>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-[#ccc] shrink-0">{ex.n}.</span>
-                    <p className="text-[12px] text-[#444] dark:text-[#ccc] leading-snug">{ex.en}</p>
-                    <button onClick={() => speak(ex.en!)} className="text-[#ddd] hover:text-[#888] transition-colors cursor-pointer shrink-0"><Volume2 className="h-2.5 w-2.5" /></button>
+                  <div className="flex items-start gap-1.5 min-w-0">
+                    <span className="text-[10px] text-[#ccc] shrink-0 mt-0.5">{ex.n}.</span>
+                    <p className="text-[12px] text-[#444] dark:text-[#ccc] leading-snug break-words min-w-0">{ex.en}</p>
+                    <button onClick={() => speak(ex.en!)} className="text-[#ddd] hover:text-[#888] transition-colors cursor-pointer shrink-0 mt-0.5"><Volume2 className="h-2.5 w-2.5" /></button>
                   </div>
-                  {ex.vi && <p className="text-[11px] text-[#aaa] ml-4">{ex.vi}</p>}
+                  {ex.vi && <p className="text-[11px] text-[#aaa] ml-4 break-words">{ex.vi}</p>}
                 </div>
               ))}
             </div>
@@ -525,7 +531,7 @@ function FlashcardView({ words }: { words: VocabWord[] }) {
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-[#999] dark:text-[#666] mb-1">Word Family</p>
                   <div className="space-y-0.5">
                     {families.map(f => (
-                      <p key={f} className="text-[12px] text-[#444] dark:text-[#ccc] pl-2 border-l-2 border-[#ddd] dark:border-[#444]">{f}</p>
+                      <p key={f} className="text-[12px] text-[#444] dark:text-[#ccc] pl-2 border-l-2 border-[#ddd] dark:border-[#444] break-words">{f}</p>
                     ))}
                   </div>
                 </div>
@@ -535,7 +541,7 @@ function FlashcardView({ words }: { words: VocabWord[] }) {
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-500 dark:text-emerald-400 mb-1">Đồng nghĩa</p>
                   <div className="space-y-0.5">
                     {synonyms.map(s => (
-                      <p key={s} className="text-[12px] text-[#444] dark:text-[#ccc] pl-2 border-l-2 border-emerald-400 dark:border-emerald-500">{s}</p>
+                      <p key={s} className="text-[12px] text-[#444] dark:text-[#ccc] pl-2 border-l-2 border-emerald-400 dark:border-emerald-500 break-words">{s}</p>
                     ))}
                   </div>
                 </div>
@@ -545,7 +551,7 @@ function FlashcardView({ words }: { words: VocabWord[] }) {
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-red-500 dark:text-red-400 mb-1">Trái nghĩa</p>
                   <div className="space-y-0.5">
                     {antonyms.map(a => (
-                      <p key={a} className="text-[12px] text-[#444] dark:text-[#ccc] pl-2 border-l-2 border-red-400 dark:border-red-500">{a}</p>
+                      <p key={a} className="text-[12px] text-[#444] dark:text-[#ccc] pl-2 border-l-2 border-red-400 dark:border-red-500 break-words">{a}</p>
                     ))}
                   </div>
                 </div>
