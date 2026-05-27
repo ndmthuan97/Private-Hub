@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, Loader2, Volume2, CheckCircle2, XCircle,
-  ChevronRight, RotateCcw, Trophy, BookA, Languages,
+  ChevronRight, RotateCcw, Trophy, BookA, TextCursorInput,
   PenLine, Shuffle, BookOpen, X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -30,7 +30,7 @@ interface VocabWord {
 }
 
 type LearnMode = 'en-vi' | 'vi-en' | 'writing' | 'mixed'
-type QuizType = 'word-to-def' | 'def-to-word' | 'writing-tiles'
+type QuizType = 'word-to-def' | 'fill-blank' | 'writing-tiles'
 
 interface QuizQuestion {
   type: QuizType
@@ -79,14 +79,37 @@ function generateEnViQuestions(words: VocabWord[]): QuizQuestion[] {
   }).filter(Boolean) as QuizQuestion[])
 }
 
+// Replace the target word in a sentence with blanks
+function maskWordInSentence(sentence: string, word: string): string | null {
+  const regex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
+  if (!regex.test(sentence)) return null
+  return sentence.replace(regex, '_____')
+}
+
 function generateViEnQuestions(words: VocabWord[]): QuizQuestion[] {
   if (words.length < 4) return []
   const allWords = words.map(w => w.word)
-  const pronMap = buildPronunciationMap(words)
-  return shuffle(words.filter(w => w.definitionVi).map(w => {
+  return shuffle(words.filter(w => {
+    if (!w.definitionVi) return false
+    const ex1 = w.example1En && maskWordInSentence(w.example1En, w.word)
+    const ex2 = w.example2En && maskWordInSentence(w.example2En, w.word)
+    return ex1 || ex2
+  }).map(w => {
+    const ex1Masked = w.example1En ? maskWordInSentence(w.example1En, w.word) : null
+    const ex2Masked = w.example2En ? maskWordInSentence(w.example2En, w.word) : null
+    const masked = ex1Masked && ex2Masked
+      ? (Math.random() > 0.5 ? ex1Masked : ex2Masked)
+      : (ex1Masked ?? ex2Masked)!
     const distractors = pickRandom(allWords, 3, w.word)
     if (distractors.length < 3) return null
-    return { type: 'def-to-word' as QuizType, word: w, prompt: w.definitionVi!, correct: w.word, options: shuffle([w.word, ...distractors]), pronunciationMap: pronMap }
+    return {
+      type: 'fill-blank' as QuizType,
+      word: w,
+      prompt: masked,
+      subtitle: w.definitionVi ?? undefined,
+      correct: w.word,
+      options: shuffle([w.word, ...distractors]),
+    }
   }).filter(Boolean) as QuizQuestion[])
 }
 
@@ -100,7 +123,6 @@ function generateMixedQuestions(words: VocabWord[]): QuizQuestion[] {
   if (words.length < 4) return []
   const allDefVi = words.map(w => w.definitionVi).filter(Boolean) as string[]
   const allWords = words.map(w => w.word)
-  const pronMap = buildPronunciationMap(words)
   return shuffle(words.filter(w => w.definitionVi).map(w => {
     const rand = Math.random()
     if (rand < 0.3) {
@@ -108,9 +130,18 @@ function generateMixedQuestions(words: VocabWord[]): QuizQuestion[] {
       if (d.length < 3) return null
       return { type: 'word-to-def' as QuizType, word: w, prompt: w.word, subtitle: w.pronunciation ?? undefined, correct: w.definitionVi!, options: shuffle([w.definitionVi!, ...d]) }
     } else if (rand < 0.6) {
-      const d = pickRandom(allWords, 3, w.word)
-      if (d.length < 3) return null
-      return { type: 'def-to-word' as QuizType, word: w, prompt: w.definitionVi!, correct: w.word, options: shuffle([w.word, ...d]), pronunciationMap: pronMap }
+      // Fill-in-the-blank if example sentence available
+      const ex1Masked = w.example1En ? maskWordInSentence(w.example1En, w.word) : null
+      const ex2Masked = w.example2En ? maskWordInSentence(w.example2En, w.word) : null
+      const masked = ex1Masked ?? ex2Masked
+      if (masked) {
+        const distractors = pickRandom(allWords, 3, w.word)
+        if (distractors.length >= 3) {
+          return { type: 'fill-blank' as QuizType, word: w, prompt: masked, subtitle: w.definitionVi ?? undefined, correct: w.word, options: shuffle([w.word, ...distractors]) }
+        }
+      }
+      // Fallback to writing tiles if no example sentence
+      return { type: 'writing-tiles' as QuizType, word: w, prompt: w.definitionVi!, subtitle: w.type ?? undefined, correct: w.word, options: generateLetterTiles(w.word) }
     }
     return { type: 'writing-tiles' as QuizType, word: w, prompt: w.definitionVi!, subtitle: w.type ?? undefined, correct: w.word, options: generateLetterTiles(w.word) }
   }).filter(Boolean) as QuizQuestion[])
@@ -128,13 +159,13 @@ function generateQuestions(words: VocabWord[], mode: LearnMode): QuizQuestion[] 
 /* ─── Constants ───────────────────────────────────────────────────── */
 const TYPE_LABEL: Record<QuizType, { label: string; color: string }> = {
   'word-to-def': { label: 'Anh → Việt', color: 'text-blue-500' },
-  'def-to-word': { label: 'Việt → Anh', color: 'text-violet-500' },
+  'fill-blank': { label: 'Điền từ vào câu', color: 'text-violet-500' },
   'writing-tiles': { label: 'Ghép chữ cái', color: 'text-emerald-500' },
 }
 
 const MODES = [
   { id: 'en-vi' as LearnMode, icon: <BookA className="h-5 w-5" />, label: 'Anh → Việt', desc: 'Xem từ tiếng Anh, chọn nghĩa tiếng Việt', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-  { id: 'vi-en' as LearnMode, icon: <Languages className="h-5 w-5" />, label: 'Việt → Anh', desc: 'Xem nghĩa tiếng Việt, chọn từ tiếng Anh', color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-900/20' },
+  { id: 'vi-en' as LearnMode, icon: <TextCursorInput className="h-5 w-5" />, label: 'Điền từ vào câu', desc: 'Đọc câu tiếng Anh, điền từ còn thiếu', color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-900/20' },
   { id: 'writing' as LearnMode, icon: <PenLine className="h-5 w-5" />, label: 'Tập viết', desc: 'Gõ từ hoặc ghép chữ cái', color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20' },
   { id: 'mixed' as LearnMode, icon: <Shuffle className="h-5 w-5" />, label: 'Hỗn hợp', desc: 'Trắc nghiệm + viết kết hợp', color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
 ]
@@ -280,7 +311,6 @@ function QuizCard({ question, onAnswer }: { question: QuizQuestion; onAnswer: (c
     if (opt === question.correct) {
       setTimeout(() => onAnswer(true), 900)
     }
-    // Wrong: user clicks "Tiếp" in AnswerFooter
   }
 
   return (
@@ -301,19 +331,12 @@ function QuizCard({ question, onAnswer }: { question: QuizQuestion; onAnswer: (c
             {question.word.type && <span className="inline-block mt-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#f0f0f0] dark:bg-[#333] text-[#666] dark:text-[#aaa]">{question.word.type}</span>}
           </div>
         )}
-        {question.type === 'def-to-word' && (
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-widest text-[#bbb] mb-1">Từ nào có nghĩa:</p>
-            <p className="text-[15px] font-semibold text-[#171717] dark:text-[#f5f5f5] leading-relaxed">{question.prompt}</p>
-          </div>
-        )}
       </div>
 
       <div className="grid grid-cols-1 gap-2">
         {question.options.map((opt, i) => {
           const isCorrect = opt === question.correct
           const isSelected = selected === opt
-          const pron = question.type === 'def-to-word' ? question.pronunciationMap?.[opt] : null
           return (
             <button key={i} onClick={() => pick(opt)}
               className={cn(
@@ -326,9 +349,105 @@ function QuizCard({ question, onAnswer }: { question: QuizQuestion; onAnswer: (c
               style={{ boxShadow: 'var(--shadow-card)' }}>
               <span className="font-mono text-[10px] opacity-40 shrink-0">{String.fromCharCode(65 + i)}</span>
               <span className="flex-1">{opt}</span>
-              {pron && <span className="font-mono text-[11px] opacity-50 shrink-0">{pron}</span>}
               {selected && isCorrect && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />}
               {selected && isSelected && !isCorrect && <XCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />}
+            </button>
+          )
+        })}
+      </div>
+
+      {selected && (
+        <AnswerFooter
+          isCorrect={selected === question.correct}
+          correctAnswer={question.correct}
+          onNext={() => onAnswer(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+/* ─── Fill-in-the-Blank Card (multiple choice) ───────────────────── */
+function FillBlankCard({ question, onAnswer }: { question: QuizQuestion; onAnswer: (correct: boolean) => void }) {
+  const [selected, setSelected] = useState<string | null>(null)
+  const [showDetail, setShowDetail] = useState(false)
+  const meta = TYPE_LABEL[question.type]
+
+  function pick(opt: string) {
+    if (selected) return
+    setSelected(opt)
+    speak(question.word.word)
+    if (opt === question.correct) {
+      setTimeout(() => onAnswer(true), 900)
+    }
+  }
+
+  const promptParts = question.prompt.split('_____')
+
+  return (
+    <div className="space-y-3">
+      {showDetail && <WordDetailPanel word={question.word} onClose={() => setShowDetail(false)} />}
+
+      {/* Question card — sentence with blank */}
+      <div className="rounded-[10px] bg-white dark:bg-[#1a1a1a] px-5 py-4 space-y-3" style={{ boxShadow: 'var(--shadow-card)' }}>
+        <div className="flex items-center justify-between">
+          <span className={cn('text-[10px] font-semibold uppercase tracking-widest', meta.color)}>{meta.label}</span>
+          <button onClick={() => setShowDetail(true)}
+            className="flex items-center justify-center h-7 w-7 rounded-[5px] text-[#bbb] hover:text-[#666] dark:hover:text-[#aaa] transition-colors cursor-pointer"
+            style={{ boxShadow: 'var(--shadow-border)' }}>
+            <BookOpen className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {/* Sentence with blank */}
+        <div className="text-[15px] leading-relaxed text-[#444] dark:text-[#ccc]">
+          {promptParts.map((part, i) => (
+            <span key={i}>
+              {part}
+              {i < promptParts.length - 1 && (
+                <span className={cn(
+                  'inline-block mx-1 px-3 py-0.5 rounded-[4px] font-semibold min-w-[60px] text-center border-b-2',
+                  selected && selected === question.correct && 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-400',
+                  selected && selected !== question.correct && 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-400',
+                  !selected && 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 border-violet-300 dark:border-violet-600',
+                )}>
+                  {selected ?? '???'}
+                </span>
+              )}
+            </span>
+          ))}
+        </div>
+
+        {/* Hint: Vietnamese definition */}
+        {question.subtitle && (
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[#f0f0f0] dark:bg-[#2a2a2a] text-[#888]">Gợi ý</span>
+            <p className="text-[12px] text-[#888] italic">{question.subtitle}</p>
+          </div>
+        )}
+        {question.word.type && (
+          <span className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#f0f0f0] dark:bg-[#333] text-[#666] dark:text-[#aaa]">{question.word.type}</span>
+        )}
+      </div>
+
+      {/* Options */}
+      <div className="grid grid-cols-2 gap-2">
+        {question.options.map((opt, i) => {
+          const isCorrect = opt === question.correct
+          const isSelected = selected === opt
+          return (
+            <button key={i} onClick={() => pick(opt)}
+              className={cn(
+                'rounded-[10px] px-4 py-3 text-center text-[13px] font-medium transition-all cursor-pointer leading-relaxed',
+                !selected && 'text-[#444] dark:text-[#ccc] hover:text-[#171717] dark:hover:text-[#f5f5f5]',
+                selected && isCorrect && 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400',
+                selected && isSelected && !isCorrect && 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',
+                selected && !isSelected && !isCorrect && 'opacity-25',
+              )}
+              style={{ boxShadow: 'var(--shadow-card)' }}>
+              {opt}
+              {selected && isCorrect && <CheckCircle2 className="inline-block ml-1.5 h-3.5 w-3.5 text-emerald-500" />}
+              {selected && isSelected && !isCorrect && <XCircle className="inline-block ml-1.5 h-3.5 w-3.5 text-red-500" />}
             </button>
           )
         })}
@@ -675,6 +794,7 @@ function LearnContent() {
             onRetry={() => startQuiz(words, mode)} onBack={() => router.back()} onChangeMode={handleChangeMode} />
         ) : current ? (
           current.type === 'writing-tiles' ? <WritingTilesCard key={index} question={current} onAnswer={handleAnswer} /> :
+          current.type === 'fill-blank' ? <FillBlankCard key={index} question={current} onAnswer={handleAnswer} /> :
           <QuizCard key={index} question={current} onAnswer={handleAnswer} />
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center">

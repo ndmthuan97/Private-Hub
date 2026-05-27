@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, RotateCcw, RefreshCw, ArrowLeft, Loader2, Volume2 } from "lucide-react";
+import { Send, RotateCcw, RefreshCw, ArrowLeft, Loader2, Volume2, PenLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Tip } from "@/components/ui/tip";
@@ -164,6 +164,7 @@ export default function ConversationPage() {
   const [sending, setSending]                 = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLTextAreaElement>(null);
+  const [customTopic, setCustomTopic] = useState("");
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -188,10 +189,36 @@ export default function ConversationPage() {
     setStep("role");
   }
 
+  function handleCustomTopicSubmit() {
+    const text = customTopic.trim();
+    if (!text) return;
+    const topic: Topic = { id: 'custom', label: `✨ ${text}`, prompt: text };
+    setCustomTopic("");
+    selectTopic(topic);
+  }
+
+  // AI greeting — sends initial request with empty messages so AI opens conversation
+  async function sendGreeting(topic: Topic, p: Persona) {
+    setSending(true);
+    try {
+      const res = await fetch("/api/conversation", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: [], language, persona: p, scenario: topic.prompt, jlptLevel }),
+      });
+      const json = await res.json();
+      if (json.statusCode === 200) {
+        setMessages([{ role: "assistant", content: json.data.reply }]);
+      }
+    } catch { /* ignore — user can still type first */ }
+    finally { setSending(false); inputRef.current?.focus(); }
+  }
+
   function selectRole(p: Persona) {
     setPersona(p);
     setMessages([]);
     setStep("chat");
+    // AI opens the conversation
+    if (selectedTopic) sendGreeting(selectedTopic, p);
   }
 
   const sendMessage = useCallback(async () => {
@@ -285,6 +312,27 @@ export default function ConversationPage() {
               </button>
             ))}
           </div>
+
+          {/* Custom topic input */}
+          <div className="pt-2" style={{ boxShadow: "rgba(0,0,0,0.06) 0px -1px 0px 0px inset" }}>
+            <p className="text-[11px] font-medium uppercase tracking-widest text-[#999] mb-2">Hoặc nhập chủ đề của bạn</p>
+            <div className="flex gap-2">
+              <div className="flex-1 rounded-[8px] overflow-hidden" style={{ boxShadow: "var(--shadow-border)" }}>
+                <input
+                  type="text"
+                  value={customTopic}
+                  onChange={e => setCustomTopic(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleCustomTopicSubmit()}
+                  placeholder={language === "en" ? "Ví dụ: Phỏng vấn kỹ thuật..." : "例: アルバイトの面接..."}
+                  className="w-full h-10 px-3 text-[13px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5] placeholder:text-[#ccc] outline-none"
+                />
+              </div>
+              <button onClick={handleCustomTopicSubmit} disabled={!customTopic.trim()}
+                className="flex h-10 px-3 items-center gap-1.5 rounded-[8px] bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] text-[12px] font-medium hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 shrink-0">
+                <PenLine className="w-3.5 h-3.5" /> Dùng
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -362,13 +410,6 @@ export default function ConversationPage() {
       />
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <div className="max-w-2xl mx-auto space-y-4">
-          {messages.length === 0 && (
-            <div className="text-center py-12 animate-fade-up">
-              <p className="text-[15px] text-[var(--fg-muted)]">
-                {language === "en" ? "Say something to start the conversation!" : "何か話しかけてみましょう！"}
-              </p>
-            </div>
-          )}
           {messages.map((msg, i) => <MessageBubble key={i} msg={msg} />)}
           {sending && <TypingIndicator />}
           <div ref={bottomRef} />

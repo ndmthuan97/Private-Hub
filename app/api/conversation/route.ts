@@ -46,7 +46,8 @@ Rules:
 1. Respond ONLY in English. Keep responses conversational (2-4 sentences).
 2. After your response, if the user made grammatical errors, append a section starting exactly with "💡 Correction:" and briefly explain the correct form. If no errors, skip this section.
 3. Occasionally ask a follow-up question to keep the conversation flowing.
-4. Be encouraging and supportive.`;
+4. Be encouraging and supportive.
+5. If there are no previous messages, YOU MUST start the conversation first — greet the user and introduce the scenario naturally.`;
   }
 
   // Japanese with romaji + Vietnamese translation
@@ -61,7 +62,8 @@ Rules:
    📖 ローマ字: [Romanized Japanese of your response]
    🇻🇳 Dịch: [Vietnamese translation of your response]
 4. ユーザーが文法的な間違いをした場合、"💡 Sửa lỗi:" で始まるセクションを追加して、正しい形を簡単に説明してください（ベトナム語で）。
-5. 時々、会話を続けるための質問をしてください。`;
+5. 時々、会話を続けるための質問をしてください。
+6. メッセージがまだない場合、あなたが会話を始めてください — 挨拶して、シナリオを自然に紹介してください。`;
 }
 
 export async function POST(req: NextRequest) {
@@ -69,10 +71,11 @@ export async function POST(req: NextRequest) {
     const body: RequestBody = await req.json();
     const { messages, language, persona, scenario, jlptLevel } = body;
 
-    if (!messages?.length || !language || !persona || !scenario) {
+    // Allow empty messages array — AI will initiate the conversation
+    if (!Array.isArray(messages) || !language || !persona || !scenario) {
       return NextResponse.json({
         statusCode: 400,
-        message: "Missing required fields: messages, language, persona, scenario",
+        message: "Missing required fields: language, persona, scenario",
         data: null,
         errors: null,
       }, { status: 400 });
