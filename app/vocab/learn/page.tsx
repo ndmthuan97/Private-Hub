@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense, type TouchEvent as ReactTouchEvent } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, Loader2, Volume2, CheckCircle2, XCircle,
@@ -156,6 +156,26 @@ function generateQuestions(words: VocabWord[], mode: LearnMode): QuizQuestion[] 
   }
 }
 
+/* ─── Swipe hook ──────────────────────────────────────────────────── */
+function useSwipe(onSwipeLeft: () => void, threshold = 50) {
+  const startX = useRef(0)
+  const startY = useRef(0)
+
+  const onTouchStart = useCallback((e: ReactTouchEvent) => {
+    startX.current = e.touches[0].clientX
+    startY.current = e.touches[0].clientY
+  }, [])
+
+  const onTouchEnd = useCallback((e: ReactTouchEvent) => {
+    const dx = e.changedTouches[0].clientX - startX.current
+    const dy = Math.abs(e.changedTouches[0].clientY - startY.current)
+    // Horizontal swipe left, not a vertical scroll
+    if (dx < -threshold && dy < 100) onSwipeLeft()
+  }, [onSwipeLeft, threshold])
+
+  return { onTouchStart, onTouchEnd }
+}
+
 /* ─── Constants ───────────────────────────────────────────────────── */
 const TYPE_LABEL: Record<QuizType, { label: string; color: string }> = {
   'word-to-def': { label: 'Anh → Việt', color: 'text-blue-500' },
@@ -264,7 +284,7 @@ function WordDetailPanel({ word, onClose }: { word: VocabWord; onClose: () => vo
 }
 
 /* ─── Answer Footer ────────────────────────────────────────────────── */
-// Correct → auto-advance (caller handles timeout). Wrong → show "Tiếp" button.
+// Correct → auto-advance (caller handles timeout). Wrong → show "Tiếp" button + swipe hint.
 function AnswerFooter({ isCorrect, correctAnswer, onNext }: {
   isCorrect: boolean; correctAnswer: string; onNext: () => void
 }) {
@@ -293,7 +313,7 @@ function AnswerFooter({ isCorrect, correctAnswer, onNext }: {
             Tiếp <ChevronRight className="h-3.5 w-3.5" />
           </button>
         )}
-        {isCorrect && <span className="text-[10px] text-emerald-500/60 italic">tự chuyển…</span>}
+        {isCorrect && <span className="text-[10px] text-emerald-500/60 italic">vuốt ← hoặc đợi…</span>}
       </div>
     </div>
   )
@@ -743,12 +763,23 @@ function LearnContent() {
 
   const current = questions[index]
   const progress = questions.length > 0 ? (index / questions.length) * 100 : 0
+  const [answered, setAnswered] = useState(false)
 
   function handleAnswer(correct: boolean) {
     if (correct) setCorrectCount(c => c + 1)
+    setAnswered(true)
     if (index + 1 >= questions.length) setFinished(true)
     else setIndex(i => i + 1)
   }
+
+  // Reset answered flag when index changes
+  useEffect(() => { setAnswered(false) }, [index])
+
+  // Swipe left to advance (only after auto-advance on correct, or manually on wrong)
+  const swipeHandlers = useSwipe(useCallback(() => {
+    if (!answered && current) return
+    handleAnswer(false)
+  }, [answered, current, index, questions.length]))
 
   if (loading) return (
     <div className="flex min-h-screen items-center justify-center bg-white dark:bg-[#0a0a0a]">
@@ -788,7 +819,8 @@ function LearnContent() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-xl px-4 py-5">
+      <main className="mx-auto max-w-xl px-4 py-5"
+        {...swipeHandlers}>
         {finished ? (
           <QuizComplete total={questions.length} correctCount={correctCount}
             onRetry={() => startQuiz(words, mode)} onBack={() => router.back()} onChangeMode={handleChangeMode} />

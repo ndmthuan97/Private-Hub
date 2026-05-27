@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, use, useMemo } from 'react'
+import { useState, useEffect, use, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -409,6 +409,21 @@ function FlashcardView({ words }: { words: VocabWord[] }) {
     setIdx(i => Math.max(0, Math.min(words.length - 1, i + dir)))
   }
 
+  // Touch swipe support
+  const touchStartX = useRef(0)
+  const touchStartY = useRef(0)
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }, [])
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current)
+    if (dy > 80) return // vertical scroll, ignore
+    if (dx < -50) go(1)  // swipe left = next
+    if (dx > 50) go(-1)  // swipe right = prev
+  }, [words.length])
+
   const ts       = typeStyle(word.type)
   const families = word.wordFamily?.split(',').map(s => s.trim()).filter(Boolean) ?? []
   const synonyms = word.synonyms?.split(',').map(s => s.trim()).filter(Boolean)  ?? []
@@ -420,7 +435,9 @@ function FlashcardView({ words }: { words: VocabWord[] }) {
   const hasRight = examples.length > 0 || families.length > 0 || synonyms.length > 0 || antonyms.length > 0
 
   return (
-    <div className="py-6 px-4 md:px-8">
+    <div className="py-6 px-4 md:px-8"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}>
       {/* Navigation */}
       <div className="flex items-center justify-between mb-5">
         <button onClick={() => go(-1)} disabled={idx === 0}
@@ -531,8 +548,8 @@ function FlashcardView({ words }: { words: VocabWord[] }) {
         </div>
       </div>
 
-      {/* Keyboard hint */}
-      <p className="mt-3 text-center text-[11px] text-[#ccc]">← → để chuyển thẻ</p>
+      {/* Keyboard / swipe hint */}
+      <p className="mt-3 text-center text-[11px] text-[#ccc]">vuốt ← → hoặc bấm phím để chuyển thẻ</p>
     </div>
   )
 }
