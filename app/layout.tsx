@@ -1,7 +1,6 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono } from "next/font/google";
-import Script from "next/script";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -19,14 +18,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="vi" className={geistMono.variable} suppressHydrationWarning>
       <head>
-        {/* Anti-flash: set data-theme before first paint */}
-        <Script id="theme-init" strategy="beforeInteractive">{`
-          (function(){
-            var t=localStorage.getItem('ph_theme');
-            if(!t) t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
-            document.documentElement.setAttribute('data-theme',t);
-          })();
-        `}</Script>
+        {/* Anti-flash: raw blocking script — runs before first paint */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var t=localStorage.getItem('ph_theme');if(!t)t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);})();`,
+          }}
+        />
       </head>
       <body className="font-sans antialiased min-h-screen flex bg-[var(--bg-base)]" suppressHydrationWarning>
         <Sidebar />

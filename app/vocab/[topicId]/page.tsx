@@ -402,16 +402,16 @@ function PasteImportModal({ topicId, onClose, onSaved }: { topicId: string; onCl
 function FlashcardView({ words }: { words: VocabWord[] }) {
   const [idx, setIdx] = useState(0)
 
-  const word = words[idx]
-  if (!word) return null
-
-  function go(dir: 1 | -1) {
-    setIdx(i => Math.max(0, Math.min(words.length - 1, i + dir)))
-  }
-
-  // Touch swipe support
+  // All hooks MUST be called before any conditional return
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const go = useCallback((dir: 1 | -1) => {
+    setIdx(i => Math.max(0, Math.min(words.length - 1, i + dir)))
+  }, [words.length])
+
+  // Touch swipe support
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
@@ -419,10 +419,23 @@ function FlashcardView({ words }: { words: VocabWord[] }) {
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     const dx = e.changedTouches[0].clientX - touchStartX.current
     const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current)
-    if (dy > 80) return // vertical scroll, ignore
-    if (dx < -50) go(1)  // swipe left = next
-    if (dx > 50) go(-1)  // swipe right = prev
-  }, [words.length])
+    if (dy > 80) return
+    if (dx < -50) go(1)
+    if (dx > 50) go(-1)
+  }, [go])
+
+  // Keyboard arrow keys for desktop
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowRight') go(1)
+      if (e.key === 'ArrowLeft') go(-1)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [go])
+
+  const word = words[idx]
+  if (!word) return null
 
   const ts       = typeStyle(word.type)
   const families = word.wordFamily?.split(',').map(s => s.trim()).filter(Boolean) ?? []
@@ -432,115 +445,109 @@ function FlashcardView({ words }: { words: VocabWord[] }) {
     { en: word.example1En, vi: word.example1Vi, n: 1 },
     { en: word.example2En, vi: word.example2Vi, n: 2 },
   ].filter(ex => ex.en)
-  const hasRight = examples.length > 0 || families.length > 0 || synonyms.length > 0 || antonyms.length > 0
 
   return (
-    <div className="py-6 px-4 md:px-8"
+    <div className="py-4 px-4 md:px-6 max-w-2xl mx-auto"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}>
-      {/* Navigation */}
-      <div className="flex items-center justify-between mb-5">
-        <button onClick={() => go(-1)} disabled={idx === 0}
-          className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors cursor-pointer"
-          style={{ boxShadow: 'var(--shadow-border)' }}>
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <span className="text-[12px] text-[#999] tabular-nums">{idx + 1} / {words.length}</span>
-        <button onClick={() => go(1)} disabled={idx === words.length - 1}
-          className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors cursor-pointer"
-          style={{ boxShadow: 'var(--shadow-border)' }}>
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
 
       {/* Card */}
-      <div className="rounded-[12px] bg-white dark:bg-[#111] overflow-hidden"
+      <div className="rounded-[10px] bg-white dark:bg-[#111] overflow-hidden"
         style={{ boxShadow: 'var(--shadow-card)' }}>
 
-        {/* Body: split left / right */}
-        <div className="flex flex-col md:flex-row">
-
-          {/* Left: word header + definitions */}
-          <div className="flex-1 px-6 md:px-8 py-6 space-y-4">
-            {/* Word */}
-            <div>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="text-[26px] md:text-[30px] font-bold text-[#171717] dark:text-[#f5f5f5] tracking-tight leading-tight">{word.word}</h2>
-                <button onClick={() => speak(word.word)}
-                  className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#bbb] hover:text-[#666] dark:hover:text-[#aaa] transition-colors cursor-pointer"
-                  style={{ boxShadow: 'var(--shadow-border)' }}>
-                  <Volume2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                {word.type && <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: ts.bg, color: ts.text }}>{word.type}</span>}
-                {word.pronunciation && <span className="font-mono text-[12px] text-[#888]">{word.pronunciation}</span>}
-                {word.samplePhrase && <span className="text-[11px] text-[#aaa] italic">— {word.samplePhrase}</span>}
-              </div>
-            </div>
-
-            {/* Definitions */}
-            {word.definitionVi && (
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-widest text-[#bbb] mb-1">🇻🇳 Định nghĩa</p>
-                <p className="text-[14px] font-semibold text-[#171717] dark:text-[#f5f5f5] leading-relaxed">{word.definitionVi}</p>
-              </div>
-            )}
-            {word.definitionEn && (
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-widest text-[#bbb] mb-1">🇬🇧 Definition</p>
-                <p className="text-[13px] text-[#555] dark:text-[#aaa] italic leading-relaxed">{word.definitionEn}</p>
-              </div>
-            )}
+        {/* Header: word + nav */}
+        <div className="px-4 py-3 flex items-center justify-between gap-3"
+          style={{ boxShadow: 'rgba(0,0,0,0.05) 0 1px 0 0' }}>
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="text-[20px] font-bold text-[#171717] dark:text-[#f5f5f5] tracking-tight truncate">{word.word}</h2>
+            <button onClick={() => speak(word.word)}
+              className="text-[#bbb] hover:text-[#666] dark:hover:text-[#aaa] transition-colors cursor-pointer shrink-0">
+              <Volume2 className="h-3.5 w-3.5" />
+            </button>
+            {word.type && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0" style={{ background: ts.bg, color: ts.text }}>{word.type}</span>}
+            {word.pronunciation && <span className="font-mono text-[11px] text-[#888] shrink-0">{word.pronunciation}</span>}
           </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button onClick={() => go(-1)} disabled={idx === 0}
+              className="flex h-7 w-7 items-center justify-center rounded-[5px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] disabled:opacity-20 transition-colors cursor-pointer">
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <span className="text-[11px] text-[#999] tabular-nums w-12 text-center">{idx + 1}/{words.length}</span>
+            <button onClick={() => go(1)} disabled={idx === words.length - 1}
+              className="flex h-7 w-7 items-center justify-center rounded-[5px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] disabled:opacity-20 transition-colors cursor-pointer">
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
 
-          {/* Right: examples + word family + syn/ant */}
-          {hasRight && (
-            <div className="flex-1 px-6 md:px-8 py-6 space-y-4 border-t md:border-t-0 md:border-l border-[#f0f0f0] dark:border-[#222]">
-              {/* Examples */}
-              {examples.length > 0 && (
+        {/* Body */}
+        <div className="px-4 py-3 space-y-2.5">
+          {/* Collocations */}
+          {word.samplePhrase && (
+            <p className="text-[11px] text-[#999] italic">📝 {word.samplePhrase}</p>
+          )}
+
+          {/* Definitions */}
+          {word.definitionVi && (
+            <div className="flex gap-2 items-baseline">
+              <span className="text-[10px] font-medium text-[#bbb] shrink-0 mt-px">VI</span>
+              <p className="text-[13px] font-semibold text-[#171717] dark:text-[#f5f5f5] leading-snug">{word.definitionVi}</p>
+            </div>
+          )}
+          {word.definitionEn && (
+            <div className="flex gap-2 items-baseline">
+              <span className="text-[10px] font-medium text-[#bbb] shrink-0 mt-px">EN</span>
+              <p className="text-[12px] text-[#666] dark:text-[#aaa] italic leading-snug">{word.definitionEn}</p>
+            </div>
+          )}
+
+          {/* Examples — compact */}
+          {examples.length > 0 && (
+            <div className="space-y-1.5 pt-1 border-t border-[#f0f0f0] dark:border-[#1a1a1a]">
+              {examples.map(ex => (
+                <div key={ex.n}>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-[#ccc] shrink-0">{ex.n}.</span>
+                    <p className="text-[12px] text-[#444] dark:text-[#ccc] leading-snug">{ex.en}</p>
+                    <button onClick={() => speak(ex.en!)} className="text-[#ddd] hover:text-[#888] transition-colors cursor-pointer shrink-0"><Volume2 className="h-2.5 w-2.5" /></button>
+                  </div>
+                  {ex.vi && <p className="text-[11px] text-[#aaa] ml-4">{ex.vi}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Word Family / Synonyms / Antonyms — each item on its own line */}
+          {(families.length > 0 || synonyms.length > 0 || antonyms.length > 0) && (
+            <div className="space-y-2 pt-2 border-t border-[#f0f0f0] dark:border-[#1a1a1a]">
+              {families.length > 0 && (
                 <div>
-                  <p className="text-[10px] font-medium uppercase tracking-widest text-[#bbb] mb-2">Ví dụ</p>
-                  <div className="space-y-3">
-                    {examples.map(ex => (
-                      <div key={ex.n} className="flex gap-2">
-                        <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#f0f0f0] dark:bg-[#222] text-[9px] font-medium text-[#999] shrink-0 mt-0.5">{ex.n}</span>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-[12px] text-[#333] dark:text-[#ccc] leading-relaxed">{ex.en}</p>
-                            <button onClick={() => speak(ex.en!)} className="text-[#ddd] hover:text-[#999] transition-colors cursor-pointer shrink-0"><Volume2 className="h-2.5 w-2.5" /></button>
-                          </div>
-                          {ex.vi && <p className="text-[11px] text-[#aaa] mt-0.5">{ex.vi}</p>}
-                        </div>
-                      </div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#999] dark:text-[#666] mb-1">Word Family</p>
+                  <div className="space-y-0.5">
+                    {families.map(f => (
+                      <p key={f} className="text-[12px] text-[#444] dark:text-[#ccc] pl-2 border-l-2 border-[#ddd] dark:border-[#444]">{f}</p>
                     ))}
                   </div>
                 </div>
               )}
-
-              {/* Word family */}
-              {families.length > 0 && (
+              {synonyms.length > 0 && (
                 <div>
-                  <p className="text-[10px] font-medium uppercase tracking-widest text-[#bbb] mb-1.5">Word Family</p>
-                  <div className="flex flex-wrap gap-1">{families.map(f => <Chip key={f} label={f} bg="hsl(0,0%,0%,0.05)" text="#555" />)}</div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-500 dark:text-emerald-400 mb-1">Đồng nghĩa</p>
+                  <div className="space-y-0.5">
+                    {synonyms.map(s => (
+                      <p key={s} className="text-[12px] text-[#444] dark:text-[#ccc] pl-2 border-l-2 border-emerald-400 dark:border-emerald-500">{s}</p>
+                    ))}
+                  </div>
                 </div>
               )}
-
-              {/* Synonyms / Antonyms */}
-              {(synonyms.length > 0 || antonyms.length > 0) && (
-                <div className="flex gap-4">
-                  {synonyms.length > 0 && (
-                    <div className="flex-1">
-                      <p className="text-[10px] font-medium uppercase tracking-widest text-[#bbb] mb-1.5">Đồng nghĩa</p>
-                      <div className="flex flex-wrap gap-1">{synonyms.map(s => <Chip key={s} label={s} bg="hsl(160,84%,42%,0.08)" text="hsl(160,84%,28%)" />)}</div>
-                    </div>
-                  )}
-                  {antonyms.length > 0 && (
-                    <div className="flex-1">
-                      <p className="text-[10px] font-medium uppercase tracking-widest text-[#bbb] mb-1.5">Trái nghĩa</p>
-                      <div className="flex flex-wrap gap-1">{antonyms.map(a => <Chip key={a} label={a} bg="hsl(0,84%,60%,0.08)" text="hsl(0,72%,42%)" />)}</div>
-                    </div>
-                  )}
+              {antonyms.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-red-500 dark:text-red-400 mb-1">Trái nghĩa</p>
+                  <div className="space-y-0.5">
+                    {antonyms.map(a => (
+                      <p key={a} className="text-[12px] text-[#444] dark:text-[#ccc] pl-2 border-l-2 border-red-400 dark:border-red-500">{a}</p>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -548,8 +555,8 @@ function FlashcardView({ words }: { words: VocabWord[] }) {
         </div>
       </div>
 
-      {/* Keyboard / swipe hint */}
-      <p className="mt-3 text-center text-[11px] text-[#ccc]">vuốt ← → hoặc bấm phím để chuyển thẻ</p>
+      {/* Swipe hint */}
+      <p className="mt-2 text-center text-[10px] text-[#ccc]">vuốt ← → hoặc bấm phím để chuyển thẻ</p>
     </div>
   )
 }
