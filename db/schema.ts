@@ -161,3 +161,19 @@ export type NewVocabTopic      = typeof vocabTopics.$inferInsert;
 export type VocabWord          = typeof vocabWords.$inferSelect;
 export type NewVocabWord       = typeof vocabWords.$inferInsert;
 export type VocabTopicWithCount = VocabTopic & { word_count: number; learned_count: number };
+
+// ─── Sidebar Config ───────────────────────────────────────────
+
+// Single-row config storing all sidebar customization (links, groups, visibility)
+export const sidebarConfig = pgTable("sidebar_config", {
+  id:        text("id").primaryKey().default("default"),
+  links:     jsonb("links").notNull().default([]),       // ExternalItem[]
+  groups:    jsonb("groups").notNull().default([]),      // CustomGroup[]
+  hidden:    jsonb("hidden").notNull().default([]),      // string[] — hidden item hrefs
+  overrides: jsonb("overrides").notNull().default({}),   // Record<string, GroupOverride>
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type SidebarConfig    = typeof sidebarConfig.$inferSelect;
+export type NewSidebarConfig = typeof sidebarConfig.$inferInsert;
+

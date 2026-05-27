@@ -18,17 +18,13 @@ import { toast } from 'sonner'
 type ExternalItem = { href: string; label: string; color: string; icon: string; groupId?: string }
 type CustomGroup = { id: string; label: string }
 
-const LINKS_KEY = 'ph_external_links'
-const GROUPS_KEY = 'ph_custom_groups'
-const HIDDEN_KEY = 'ph_hidden_items'
-const GROUP_OVERRIDES_KEY = 'ph_group_overrides'
 const BUILTIN_PREFIX = '__builtin:'
 
 type GroupOverride = { customLabel?: string; hidden?: boolean }
 type GroupOverrides = Record<string, GroupOverride>
 
-// Notify sidebar (same tab) about localStorage changes
-function notifySidebar() { window.dispatchEvent(new Event('ph_storage_sync')) }
+// Notify sidebar (same tab) to re-fetch from API
+function notifySidebar() { window.dispatchEvent(new Event('ph_sidebar_sync')) }
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Globe, Code, Music, Video, Image, FileText, Database, Cloud, ShoppingBag, Gamepad2,
@@ -93,26 +89,37 @@ export default function SettingsPage() {
   const urlRef = useRef<HTMLInputElement>(null)
   const groupNameRef = useRef<HTMLInputElement>(null)
 
-  /* ── Init ──────────────────────────────────────────────────── */
+  /* ── Init: fetch from API ───────────────────────────────────── */
   useEffect(() => {
     const saved = localStorage.getItem('ph_theme') as 'dark' | 'light' | null
     const system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
     setTheme(saved ?? system)
-    try { const r = localStorage.getItem(LINKS_KEY); if (r) setLinks(JSON.parse(r).map((i: ExternalItem) => ({ ...i, icon: i.icon || 'Globe' }))); } catch {}
-    try { const r = localStorage.getItem(GROUPS_KEY); if (r) setGroups(JSON.parse(r)); } catch {}
-    try { const r = localStorage.getItem(HIDDEN_KEY); if (r) setHiddenItems(JSON.parse(r)); } catch {}
-    try { const r = localStorage.getItem(GROUP_OVERRIDES_KEY); if (r) setGroupOverrides(JSON.parse(r)); } catch {}
+    // Fetch sidebar config from DB
+    fetch('/api/sidebar').then(r => r.json()).then(json => {
+      if (json.data) {
+        setLinks((json.data.links as ExternalItem[])?.map(i => ({ ...i, icon: i.icon || 'Globe' })) ?? [])
+        setGroups((json.data.groups as CustomGroup[]) ?? [])
+        setHiddenItems((json.data.hidden as string[]) ?? [])
+        setGroupOverrides((json.data.overrides as GroupOverrides) ?? {})
+      }
+    }).catch(() => {})
   }, [])
 
   useEffect(() => { if (addPageOpen) setTimeout(() => urlRef.current?.focus(), 50) }, [addPageOpen])
   useEffect(() => { if (addGroupOpen) setTimeout(() => groupNameRef.current?.focus(), 50) }, [addGroupOpen])
 
-  /* ── Persist (+ notify sidebar) ─────────────────────────────── */
-  function persistLinks(next: ExternalItem[]) { setLinks(next); localStorage.setItem(LINKS_KEY, JSON.stringify(next)); notifySidebar() }
-  function persistGroups(next: CustomGroup[]) { setGroups(next); localStorage.setItem(GROUPS_KEY, JSON.stringify(next)); notifySidebar() }
-  function persistHidden(next: string[]) { setHiddenItems(next); localStorage.setItem(HIDDEN_KEY, JSON.stringify(next)); notifySidebar() }
-  function persistGroupOverrides(next: GroupOverrides) { setGroupOverrides(next); localStorage.setItem(GROUP_OVERRIDES_KEY, JSON.stringify(next)); notifySidebar() }
-  function applyTheme(t: 'dark' | 'light') { setTheme(t); localStorage.setItem('ph_theme', t); document.documentElement.setAttribute('data-theme', t); notifySidebar() }
+  /* ── Persist to DB (+ notify sidebar) ──────────────────────── */
+  async function saveToApi(patch: { links?: ExternalItem[]; groups?: CustomGroup[]; hidden?: string[]; overrides?: GroupOverrides }) {
+    try {
+      await fetch('/api/sidebar', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) })
+    } catch { /* silent */ }
+    notifySidebar()
+  }
+  function persistLinks(next: ExternalItem[]) { setLinks(next); saveToApi({ links: next }) }
+  function persistGroups(next: CustomGroup[]) { setGroups(next); saveToApi({ groups: next }) }
+  function persistHidden(next: string[]) { setHiddenItems(next); saveToApi({ hidden: next }) }
+  function persistGroupOverrides(next: GroupOverrides) { setGroupOverrides(next); saveToApi({ overrides: next }) }
+  function applyTheme(t: 'dark' | 'light') { setTheme(t); localStorage.setItem('ph_theme', t); document.documentElement.setAttribute('data-theme', t) }
 
   /* ── Built-in visibility ───────────────────────────────────── */
   function toggleBuiltIn(href: string) {

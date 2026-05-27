@@ -48,11 +48,6 @@ const NAV_GROUPS: NavGroup[] = [
   ]},
 ];
 
-const LINKS_KEY = "ph_external_links";
-const GROUPS_KEY = "ph_custom_groups";
-const HIDDEN_KEY = "ph_hidden_items";
-const GROUP_OVERRIDES_KEY = "ph_group_overrides";
-// Prefix for custom links assigned to built-in groups
 const BUILTIN_PREFIX = "__builtin:";
 
 function resolveIcon(iconName?: string): LucideIcon {
@@ -71,19 +66,23 @@ export function Sidebar() {
   const [groupOverrides, setGroupOverrides] = useState<GroupOverrides>({});
   const [mobileOpen, setMobileOpen]   = useState(false);
 
-  // Re-read all localStorage values
-  const syncFromStorage = useCallback(() => {
-    try { const r = localStorage.getItem(LINKS_KEY); setCustoms(r ? (JSON.parse(r) as ExternalItem[]).map(i => ({ ...i, icon: i.icon || "Globe" })) : []); } catch {}
-    try { const r = localStorage.getItem(GROUPS_KEY); setGroups(r ? JSON.parse(r) : []); } catch {}
-    try { const r = localStorage.getItem(HIDDEN_KEY); setHiddenItems(r ? JSON.parse(r) : []); } catch {}
-    try { const r = localStorage.getItem(GROUP_OVERRIDES_KEY); setGroupOverrides(r ? JSON.parse(r) : {}); } catch {}
-    // Theme
-    const t = localStorage.getItem("ph_theme") as "dark" | "light" | null;
-    if (t) { setTheme(t); document.documentElement.setAttribute("data-theme", t); }
+  // Fetch sidebar config from API
+  const fetchConfig = useCallback(async () => {
+    try {
+      const res = await fetch("/api/sidebar");
+      const json = await res.json();
+      if (json.data) {
+        setCustoms((json.data.links as ExternalItem[])?.map(i => ({ ...i, icon: i.icon || "Globe" })) ?? []);
+        setGroups((json.data.groups as CustomGroup[]) ?? []);
+        setHiddenItems((json.data.hidden as string[]) ?? []);
+        setGroupOverrides((json.data.overrides as GroupOverrides) ?? {});
+      }
+    } catch { /* silent fail on fetch error */ }
   }, []);
 
   /* ── Init ──────────────────────────────────────────────────────── */
   useEffect(() => {
+    // Theme from localStorage (UI preference, stays client-side)
     const saved = localStorage.getItem("ph_theme") as "dark" | "light" | null;
     const system = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     const t = saved ?? system;
@@ -91,26 +90,16 @@ export function Sidebar() {
     document.documentElement.setAttribute("data-theme", t);
     const savedSidebar = localStorage.getItem("ph_sidebar");
     if (savedSidebar !== null) setExpanded(savedSidebar === "1");
-    syncFromStorage();
-  }, [syncFromStorage]);
+    // Sidebar config from DB
+    fetchConfig();
+  }, [fetchConfig]);
 
-  // Listen for BOTH cross-tab storage events AND same-tab custom events
+  // Re-fetch when settings page updates DB (same-tab event)
   useEffect(() => {
-    function onCrossTabStorage(e: StorageEvent) {
-      if ([HIDDEN_KEY, LINKS_KEY, GROUPS_KEY, GROUP_OVERRIDES_KEY, "ph_theme"].includes(e.key || "")) {
-        syncFromStorage();
-      }
-    }
-    // Same-tab sync dispatched by settings page
-    function onSameTabSync() { syncFromStorage(); }
-
-    window.addEventListener("storage", onCrossTabStorage);
-    window.addEventListener("ph_storage_sync", onSameTabSync);
-    return () => {
-      window.removeEventListener("storage", onCrossTabStorage);
-      window.removeEventListener("ph_storage_sync", onSameTabSync);
-    };
-  }, [syncFromStorage]);
+    function onSync() { fetchConfig(); }
+    window.addEventListener("ph_sidebar_sync", onSync);
+    return () => window.removeEventListener("ph_sidebar_sync", onSync);
+  }, [fetchConfig]);
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
   useEffect(() => {
