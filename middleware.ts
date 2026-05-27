@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const SESSION_COOKIE = "ph_session";
-const PUBLIC_PATHS   = ["/login", "/api/auth", "/api/suggest-icon"];
+const PUBLIC_PATHS   = ["/login", "/api/auth", "/api/suggest-icon", "/embed"];
 
 async function verifyToken(token: string, secret: string): Promise<boolean> {
   try {
