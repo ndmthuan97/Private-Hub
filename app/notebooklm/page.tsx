@@ -9,6 +9,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Tip } from "@/components/ui/tip";
+import { ActionMenu } from "@/components/ui/action-menu";
 
 const NLM_URL = "https://notebooklm.google.com/";
 
@@ -267,7 +268,7 @@ function PromptRow({
   const preview  = prompt.content.replace(/^#+\s*/gm, "").replace(/\*\*|__|_|\*|`/g, "").replace(/\n+/g, " ").trim();
 
   return (
-    <div className="group flex items-center gap-3 px-4 py-2.5 rounded-[7px] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] transition-colors">
+    <div className="group flex items-center gap-2.5 px-2.5 py-2.5 rounded-[7px] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] transition-colors">
       {/* Icon */}
       <div className="shrink-0 w-6 h-6 rounded-[5px] flex items-center justify-center bg-[#f0f0f0] dark:bg-[#222]">
         <ClipboardCheck className="w-3 h-3 text-[#999]" />
@@ -291,17 +292,21 @@ function PromptRow({
         )}
       </button>
 
-      {/* Actions — visible on row hover */}
-      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Mobile: ⋯ dropdown */}
+      <ActionMenu items={[
+        { label: isCopied ? "Đã copy!" : "Copy prompt", icon: isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />, onClick: onCopy },
+        { label: "Xem chi tiết", icon: <Eye className="w-3.5 h-3.5" />, onClick: onView },
+        { label: "Chỉnh sửa", icon: <Pencil className="w-3.5 h-3.5" />, onClick: onEdit },
+      ]} />
+
+      {/* Desktop: inline hover buttons */}
+      <div className="hidden md:flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
         <Tip label={isCopied ? "Đã copy!" : "Copy"}>
           <button onClick={onCopy}
             className={cn(
               "flex h-6 w-6 items-center justify-center rounded-[4px] transition-colors cursor-pointer",
-              isCopied
-                ? "text-green-500 bg-green-50 dark:bg-green-950/30"
-                : "text-[#bbb] hover:text-blue-500"
-            )}
-            style={{ boxShadow: "var(--shadow-border)" }}>
+              isCopied ? "text-green-500 bg-green-50 dark:bg-green-950/30" : "text-[#bbb] hover:text-blue-500"
+            )} style={{ boxShadow: "var(--shadow-border)" }}>
             {isCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
           </button>
         </Tip>
@@ -353,7 +358,7 @@ function FolderSection({
       style={{ boxShadow: "var(--shadow-card)" }}>
 
       {/* Folder header */}
-      <div className="flex items-center gap-1.5 px-3 py-2.5 group/header">
+      <div className="flex items-center gap-2.5 px-4 py-2.5 group/header">
         {/* Chevron toggle */}
         <Tip label={open ? "Thu gọn" : "Mở rộng"}>
           <button
@@ -377,8 +382,15 @@ function FolderSection({
           {title}
         </span>
 
-        {/* Action buttons — visible on hover */}
-        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/header:opacity-100 transition-opacity">
+        {/* Mobile: ⋯ dropdown */}
+        <ActionMenu items={[
+          { label: "Thêm prompt", icon: <Plus className="w-3.5 h-3.5" />, onClick: onAdd },
+          { label: "Đổi tên nhóm", icon: <Pencil className="w-3.5 h-3.5" />, onClick: onRename },
+          { label: "Xóa nhóm", icon: <Trash2 className="w-3.5 h-3.5" />, onClick: onDeleteFolder, danger: true },
+        ]} />
+
+        {/* Desktop: inline hover buttons */}
+        <div className="hidden md:flex items-center gap-1 shrink-0 opacity-0 group-hover/header:opacity-100 transition-opacity">
           <Tip label="Thêm prompt">
             <button onClick={e => { e.stopPropagation(); onAdd(); }}
               className="flex h-6 w-6 items-center justify-center rounded-[5px] text-[#bbb] hover:text-blue-500 transition-colors cursor-pointer"
@@ -405,7 +417,7 @@ function FolderSection({
 
       {/* Item rows */}
       {open && (
-        <div className="border-t border-[#f0f0f0] dark:border-[#1f1f1f] px-2 py-1">
+        <div className="border-t border-[#f0f0f0] dark:border-[#1f1f1f] px-1.5 py-1">
           {items.length === 0 ? (
             <div className="py-4 text-center">
               <p className="text-[12px] text-[#bbb]">

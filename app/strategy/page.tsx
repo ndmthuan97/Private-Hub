@@ -14,6 +14,7 @@ import {
 import TurndownService from "turndown";
 import type { Roadmap, StrategyFolder } from "@/db/schema";
 import { Tip } from "@/components/ui/tip";
+import { ActionMenu } from "@/components/ui/action-menu";
 
 /* ── Constants ──────────────────────────────────────────────── */
 const FOLDERS_PER_PAGE = 5;
@@ -828,7 +829,7 @@ function ItemRow({ item, onView, onEdit, onDelete }: {
   const date = new Date(item.createdAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
 
   return (
-    <div className="group flex items-center gap-3 px-4 py-2.5 rounded-[7px] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] transition-colors">
+    <div className="group flex items-center gap-2.5 px-2.5 py-2.5 rounded-[7px] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] transition-colors">
       <div className="shrink-0 w-6 h-6 rounded-[5px] flex items-center justify-center bg-[#f0f0f0] dark:bg-[#222]">
         {item.type === "embed" ? <Link2 className="w-3 h-3 text-[#999]" /> : <FileText className="w-3 h-3 text-[#999]" />}
       </div>
@@ -846,8 +847,15 @@ function ItemRow({ item, onView, onEdit, onDelete }: {
         <span className="text-[11px] text-[#bbb] truncate max-w-[200px]">{preview}</span>
         <span className="text-[11px] text-[#bbb] tabular-nums w-[72px] text-right">{date}</span>
       </div>
-      {/* Actions — visible on row hover */}
-      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Mobile: ⋯ dropdown */}
+      <ActionMenu items={[
+        { label: "Xem chi tiết", icon: <Eye className="w-3.5 h-3.5" />, onClick: onView },
+        { label: "Chỉnh sửa", icon: <Pencil className="w-3.5 h-3.5" />, onClick: onEdit },
+        { label: "Xóa", icon: <Trash2 className="w-3.5 h-3.5" />, onClick: handleDelete, danger: true, disabled: deleting },
+      ]} />
+
+      {/* Desktop: inline hover buttons */}
+      <div className="hidden md:flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
         <Tip label="Xem chi tiết">
           <button onClick={onView}
             className="flex h-6 w-6 items-center justify-center rounded-[4px] text-[#bbb] hover:text-blue-500 transition-colors cursor-pointer"
@@ -914,7 +922,7 @@ function FolderSection({ folder, items, onAddItem, onRenameFolder, onDeleteFolde
     <div className="rounded-[10px] bg-white dark:bg-[#111] overflow-hidden"
       style={{ boxShadow: "var(--shadow-card)" }}>
       {/* Folder header */}
-      <div className="flex items-center gap-1.5 px-3 py-2.5 group/header">
+      <div className="flex items-center gap-2.5 px-4 py-2.5 group/header">
         {/* Chevron toggle — collapse/expand ONLY */}
         <Tip label={open ? "Thu gọn" : "Mở rộng"}>
           <button
@@ -943,8 +951,16 @@ function FolderSection({ folder, items, onAddItem, onRenameFolder, onDeleteFolde
 
 
 
-        {/* Action buttons — icon-only, visible on hover */}
-        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/header:opacity-100 transition-opacity">
+        {/* Mobile: ⋯ dropdown */}
+        <ActionMenu items={[
+          { label: "Mở folder", icon: <Eye className="w-3.5 h-3.5" />, onClick: onViewFolder },
+          { label: "Thêm item", icon: <Plus className="w-3.5 h-3.5" />, onClick: onAddItem },
+          { label: "Đổi tên", icon: <Pencil className="w-3.5 h-3.5" />, onClick: onRenameFolder },
+          { label: "Xóa folder", icon: <Trash2 className="w-3.5 h-3.5" />, onClick: handleDeleteFolder, danger: true, disabled: deleting },
+        ]} />
+
+        {/* Desktop: inline hover buttons */}
+        <div className="hidden md:flex items-center gap-1 shrink-0 opacity-0 group-hover/header:opacity-100 transition-opacity">
           <Tip label="Mở folder">
             <button onClick={onViewFolder}
               className="flex h-6 w-6 items-center justify-center rounded-[5px] text-[#bbb] hover:text-amber-500 transition-colors cursor-pointer"
@@ -978,7 +994,7 @@ function FolderSection({ folder, items, onAddItem, onRenameFolder, onDeleteFolde
 
       {/* Items list — capped at ITEMS_PER_FOLDER */}
       {open && (
-        <div className="border-t border-[#f0f0f0] dark:border-[#1f1f1f] px-2 py-1">
+        <div className="border-t border-[#f0f0f0] dark:border-[#1f1f1f] px-1.5 py-1">
           {items.length === 0 ? (
             <div className="py-4 text-center">
               <p className="text-[12px] text-[#bbb]">Folder trống — <button onClick={onAddItem} className="text-blue-500 hover:underline cursor-pointer">thêm item</button></p>
