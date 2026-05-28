@@ -161,6 +161,16 @@
 | `app/globals.css` | CSS variables (design tokens), base styles, dark mode |
 | `app/not-found.tsx` | 404 page |
 
+## ✍️ 13. Writing Practice — Luyện Viết Đoạn Văn
+
+| Layer | File | Vai trò |
+|---|---|---|
+| **BE** | `app/api/writing/route.ts` | `POST` xử lý 2 actions: `generate` (sinh đoạn VN 150-300 từ) + `review` (AI đánh giá bài viết) |
+| **BE** | `lib/groq.ts` | Groq client dùng chung |
+| **FE** | `app/writing/page.tsx` | UI 4-step wizard — chọn ngôn ngữ → chọn chủ đề → viết bản dịch (split panel) → xem AI review (markdown) |
+
+**Luồng:** Chọn lang → chọn topic → AI sinh đoạn VN → user viết bản dịch → AI review với 6 sections (đánh giá, điểm tốt, lỗi sai, gợi ý, paraphrase, bản mẫu)
+
 ---
 
 ## 📊 Tổng Hợp Nhanh
@@ -179,5 +189,6 @@
 | Conversation AI | 1 + lib | 1 |
 | NotebookLM | 2 | 1 |
 | DB Migration | 2 | — |
+| Writing Practice | 1 + lib | 1 |
 
 > **Gợi ý đọc code:** Bắt đầu từ `middleware.ts` → `db/schema.ts` → một module nhỏ như **Vocab Topics** để hiểu pattern BE→FE trước khi đọc các module phức tạp hơn (Strategy, SRS).

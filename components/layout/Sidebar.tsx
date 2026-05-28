@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   MessageCircle, Wallet, LayoutDashboard, LogOut, Map, Globe, X,
-  CalendarDays, Menu, BookOpen, BookA, ChevronLeft, ChevronRight, Headphones,
+  CalendarDays, Menu, BookOpen, BookA, ChevronLeft, ChevronRight, Headphones, PenLine,
   Code, Music, Video, Image, FileText, Database, Cloud, ShoppingBag, Gamepad2,
   GraduationCap, Heart, Star, Rocket, Zap, Coffee, Briefcase, Palette, Newspaper,
   Link as LinkIcon, Camera, Mail, Calculator, Shield, Terminal, Search, Home, Settings,
@@ -37,6 +37,7 @@ const NAV_GROUPS: NavGroup[] = [
     { href: "/conversation", label: "Luyện Giao Tiếp", icon: MessageCircle, color: "hsl(160,84%,42%)" },
     { href: "/vocab",        label: "Từ Vựng",         icon: BookA,         color: "hsl(239,84%,67%)" },
     { href: "/dictation",    label: "Daily Dictation",  icon: Headphones,    color: "hsl(160,84%,42%)" },
+    { href: "/writing",      label: "Luyện Viết",       icon: PenLine,       color: "hsl(24,95%,53%)" },
   ]},
   { label: "Quản lý", items: [
     { href: "/budget",   label: "Ngân Sách", icon: Wallet,      color: "hsl(38,92%,52%)" },
