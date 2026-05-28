@@ -9,6 +9,7 @@ interface GenerateBody {
   action: "generate";
   language: Language;
   scenario: string;
+  lengthSpec?: string;
 }
 
 interface ReviewBody {
@@ -21,21 +22,27 @@ interface ReviewBody {
 
 type RequestBody = GenerateBody | ReviewBody;
 
-function buildGeneratePrompt(language: Language, scenario: string): string {
+function buildGeneratePrompt(language: Language, scenario: string, lengthSpec: string): string {
   const langLabel = language === "en" ? "English" : "Japanese";
+  const isShort = lengthSpec.includes("30") || lengthSpec.includes("câu") || lengthSpec.includes("sentence");
+  const paragraphRule = isShort
+    ? "Write the text as a few short sentences. No need to split into paragraphs."
+    : "**Break the main body into 3–5 short paragraphs** (2–4 sentences each). Separate paragraphs with a blank line. Do NOT write one giant block of text.";
 
-  return `You are a Vietnamese content creator. Your task is to write a paragraph in **Vietnamese** (150–300 words) that serves as source material for a ${langLabel} translation exercise.
+  return `You are a Vietnamese content creator. Your task is to write a text in **Vietnamese** (150–300 words) that serves as source material for a ${langLabel} translation exercise.
 
 Scenario/Context: ${scenario}
 
 Rules:
-1. Write ONLY in Vietnamese. The paragraph must feel natural and realistic.
+1. Write ONLY in Vietnamese. The text must feel natural and realistic.
 2. The content should match the scenario — e.g., if "email chuyên nghiệp", write an actual professional email body in Vietnamese; if "TOEIC Part 7 Passage", write a passage that resembles a TOEIC reading comprehension text (but in Vietnamese).
 3. Use diverse vocabulary and sentence structures appropriate for intermediate-to-advanced learners.
-4. Include a brief context line at the top in this format:
-   📌 **Ngữ cảnh:** [1-sentence description of the situation]
-5. The main body should be 150–300 words. Do NOT include translation or any ${langLabel} text.
-6. Make it engaging and realistic — avoid generic filler content.`;
+4. The FIRST line must be a brief context description in this EXACT format (no emoji, no markdown, no extra notes):
+   Ngữ cảnh: [1-sentence description of the situation]
+   This context line is NOT part of the translation exercise. Do NOT add any extra note about it.
+5. ${paragraphRule}
+6. Target length: **${lengthSpec} words**. Do NOT include translation or any ${langLabel} text.
+7. Make it engaging and realistic — avoid generic filler content.`;
 }
 
 function buildReviewPrompt(
@@ -100,7 +107,7 @@ export async function POST(req: NextRequest) {
     const groq = getGroqClient();
 
     if (body.action === "generate") {
-      const systemPrompt = buildGeneratePrompt(body.language, body.scenario);
+      const systemPrompt = buildGeneratePrompt(body.language, body.scenario, body.lengthSpec || "80–150");
 
       const completion = await groq.chat.completions.create({
         model: GROQ_MODEL,

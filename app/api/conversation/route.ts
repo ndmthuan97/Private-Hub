@@ -50,7 +50,7 @@ Rules:
 5. If there are no previous messages, YOU MUST start the conversation first — greet the user and introduce the scenario naturally.`;
   }
 
-  // Japanese with romaji + Vietnamese translation
+  // Japanese with English translation
   return `${personaMap[persona]}
 
 シナリオ: ${scenario}
@@ -59,8 +59,7 @@ Rules:
 1. 日本語のみで返答してください。JLPT ${jlptLevel}レベルの語彙を使ってください。
 2. 返答は2〜4文にしてください。
 3. 返答の後、以下のフォーマットで必ず追加してください：
-   📖 ローマ字: [Romanized Japanese of your response]
-   🇻🇳 Dịch: [Vietnamese translation of your response]
+   🇬🇧 [English translation of your response]
 4. ユーザーが文法的な間違いをした場合、"💡 Sửa lỗi:" で始まるセクションを追加して、正しい形を簡単に説明してください（ベトナム語で）。
 5. 時々、会話を続けるための質問をしてください。
 6. メッセージがまだない場合、あなたが会話を始めてください — 挨拶して、シナリオを自然に紹介してください。`;

@@ -15,6 +15,13 @@ type Language = "en" | "jp";
 type Step = "language" | "topic" | "write" | "review";
 interface Topic { id: string; label: string; prompt: string }
 
+const LENGTH_OPTIONS = [
+  { id: "short",  label: "📝 Ngắn",     desc: "2–3 câu",         words: "30–60" },
+  { id: "medium", label: "📄 Vừa",      desc: "1 đoạn ngắn",     words: "80–150" },
+  { id: "long",   label: "📑 Dài",       desc: "3–5 đoạn",        words: "150–300" },
+] as const;
+type LengthId = typeof LENGTH_OPTIONS[number]["id"] | "custom";
+
 /* ── Topic Pools ────────────────────────────────────────────── */
 const TOPIC_POOL_EN: Topic[] = [
   { id: "email",       label: "📧 Email chuyên nghiệp",       prompt: "Professional business email" },
@@ -87,6 +94,8 @@ export default function WritingPage() {
   const [suggestedTopics, setSuggestedTopics] = useState<Topic[]>([]);
   const shownTopicsRef = useRef<Topic[]>([]);
   const [customTopic, setCustomTopic]         = useState("");
+  const [textLength, setTextLength]           = useState<LengthId>("medium");
+  const [customLength, setCustomLength]       = useState("");
 
   // Write step
   const [sourceText, setSourceText]       = useState("");
@@ -137,10 +146,13 @@ export default function WritingPage() {
     setGenerating(true);
     setSourceText("");
     try {
+      const lengthSpec = textLength === "custom" && customLength.trim()
+        ? customLength.trim()
+        : LENGTH_OPTIONS.find(l => l.id === textLength)?.words ?? "80–150";
       const res = await fetch("/api/writing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "generate", language, scenario: topic.prompt }),
+        body: JSON.stringify({ action: "generate", language, scenario: topic.prompt, lengthSpec }),
       });
       const json = await res.json();
       if (json.statusCode === 200) {
@@ -173,7 +185,6 @@ export default function WritingPage() {
       const json = await res.json();
       if (json.statusCode === 200) {
         setReviewResult(json.data.review);
-        setStep("review");
       } else {
         toast.error("Không thể review bài viết, thử lại nhé");
       }
@@ -298,6 +309,46 @@ export default function WritingPage() {
               </button>
             </div>
           </div>
+
+          {/* Text length selector */}
+          <div className="pt-3" style={{ boxShadow: "rgba(0,0,0,0.06) 0px -1px 0px 0px inset" }}>
+            <p className="text-[11px] font-medium uppercase tracking-widest text-[#999] mb-2">Độ dài đoạn văn</p>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {LENGTH_OPTIONS.map(opt => (
+                <button key={opt.id} onClick={() => { setTextLength(opt.id); setCustomLength(""); }}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-[12px] font-medium transition-all cursor-pointer",
+                    textLength === opt.id
+                      ? "bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717]"
+                      : "text-[#666] dark:text-[#888] hover:text-[#171717] dark:hover:text-[#f5f5f5]"
+                  )}
+                  style={{ boxShadow: "var(--shadow-border)" }}>
+                  {opt.label} <span className="text-[10px] opacity-70 ml-1">({opt.desc})</span>
+                </button>
+              ))}
+              <button onClick={() => setTextLength("custom")}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-[12px] font-medium transition-all cursor-pointer",
+                  textLength === "custom"
+                    ? "bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717]"
+                    : "text-[#666] dark:text-[#888] hover:text-[#171717] dark:hover:text-[#f5f5f5]"
+                )}
+                style={{ boxShadow: "var(--shadow-border)" }}>
+                ✏️ Tùy chỉnh
+              </button>
+            </div>
+            {textLength === "custom" && (
+              <div className="rounded-[8px] overflow-hidden" style={{ boxShadow: "var(--shadow-border)" }}>
+                <input
+                  type="text"
+                  value={customLength}
+                  onChange={e => setCustomLength(e.target.value)}
+                  placeholder="Ví dụ: 5 câu, 200 từ, 2 đoạn..."
+                  className="w-full h-9 px-3 text-[13px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5] placeholder:text-[#ccc] outline-none"
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -350,41 +401,146 @@ export default function WritingPage() {
                 <Loader2 className="h-6 w-6 animate-spin text-[hsl(24,95%,53%)]" />
                 <p className="text-[12px] text-[#999]">Đang tạo đoạn văn...</p>
               </div>
-            ) : (
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <p className="text-[14px] leading-[1.8] text-[var(--fg-primary)] whitespace-pre-wrap">{sourceText}</p>
-              </div>
-            )}
+            ) : (() => {
+              // Split context line from body
+              const lines = sourceText.split("\n");
+              const ctxIdx = lines.findIndex(l => /^(📌\s*)?(\*{0,2})?\s*Ngữ cảnh/i.test(l.replace(/[*#]/g, "")));
+              let ctxLine = "";
+              let body = sourceText;
+              if (ctxIdx !== -1) {
+                ctxLine = lines[ctxIdx]
+                  .replace(/^📌\s*/, "")
+                  .replace(/\*{1,2}/g, "")
+                  .replace(/\(?\s*Không cần dịch[^)]*\)?\s*$/i, "")
+                  .trim();
+                body = [...lines.slice(0, ctxIdx), ...lines.slice(ctxIdx + 1)].join("\n").trim();
+              }
+              return (
+                <div className="space-y-3">
+                  {ctxLine && (
+                    <div className="px-3 py-2 rounded-[8px] bg-[#f5f5f5] dark:bg-[#1a1a1a]"
+                      style={{ boxShadow: "var(--shadow-border)" }}>
+                      <p className="text-[12px] text-[#888] dark:text-[#777] italic">
+                        {ctxLine}
+                      </p>
+                    </div>
+                  )}
+                  <div className="text-[14px] leading-[1.8] text-[var(--fg-primary)] whitespace-pre-wrap">{body}</div>
+
+                  {/* Show user's writing below source when review is visible */}
+                  {reviewResult && userWriting && (
+                    <div className="mt-4 pt-4" style={{ boxShadow: "rgba(0,0,0,0.06) 0px -1px 0px 0px" }}>
+                      <p className="text-[11px] font-medium uppercase tracking-widest text-[#999] mb-2">
+                        ✏️ Bài viết của bạn ({language === "en" ? "English" : "日本語"})
+                      </p>
+                      <div className="px-3 py-2.5 rounded-[8px] bg-[#f5f5f5] dark:bg-[#1a1a1a]"
+                        style={{ boxShadow: "var(--shadow-border)" }}>
+                        <p className="text-[13px] leading-[1.7] text-[var(--fg-primary)] whitespace-pre-wrap">{userWriting}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
 
-        {/* Right — User writing area */}
+        {/* Right — User writing / Review result */}
         <div className="lg:w-1/2 flex flex-col overflow-hidden">
           <div className="px-5 py-3 shrink-0 flex items-center justify-between"
             style={{ boxShadow: "rgba(0,0,0,0.04) 0px 1px 0px 0px" }}>
-            <p className="text-[11px] font-medium uppercase tracking-widest text-[#999]">
-              ✏️ Bài viết của bạn ({language === "en" ? "English" : "日本語"})
-            </p>
-            <span className={cn(
-              "text-[11px] font-medium tabular-nums",
-              countWords(userWriting) > 0 ? "text-[hsl(24,95%,53%)]" : "text-[#ccc]"
-            )}>
-              {countWords(userWriting)} từ
-            </span>
+            {reviewResult ? (
+              <>
+                <p className="text-[11px] font-medium uppercase tracking-widest text-[#999] flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full gradient-writing flex items-center justify-center shrink-0">
+                    <span className="text-white text-[8px] font-[700]">AI</span>
+                  </span>
+                  Kết quả Review
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <Tip label="Copy kết quả">
+                    <button onClick={copyReview}
+                      className="flex h-6 w-6 items-center justify-center rounded text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
+                      style={{ boxShadow: "var(--shadow-border)" }}>
+                      {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                    </button>
+                  </Tip>
+                  <Tip label="Quay lại chỉnh sửa">
+                    <button onClick={() => setReviewResult("")}
+                      className="flex h-6 w-6 items-center justify-center rounded text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
+                      style={{ boxShadow: "var(--shadow-border)" }}>
+                      <PenLine className="w-3 h-3" />
+                    </button>
+                  </Tip>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-[11px] font-medium uppercase tracking-widest text-[#999]">
+                  ✏️ Bài viết của bạn ({language === "en" ? "English" : "日本語"})
+                </p>
+                <span className={cn(
+                  "text-[11px] font-medium tabular-nums",
+                  countWords(userWriting) > 0 ? "text-[hsl(24,95%,53%)]" : "text-[#ccc]"
+                )}>
+                  {countWords(userWriting)} từ
+                </span>
+              </>
+            )}
           </div>
-          <div className="flex-1 flex flex-col px-5 py-4 overflow-hidden">
-            <textarea
-              id="writing-input"
-              value={userWriting}
-              onChange={e => setUserWriting(e.target.value)}
-              disabled={generating || !sourceText}
-              placeholder={language === "en"
-                ? "Write your English translation here..."
-                : "ここに日本語の翻訳を書いてください..."}
-              className="flex-1 w-full bg-[#fafafa] dark:bg-[#1a1a1a] rounded-[8px] px-4 py-4 text-[14px] leading-[1.8] text-[var(--fg-primary)] placeholder:text-[#ccc] resize-none focus:outline-none focus:ring-1 focus:ring-[hsl(24,95%,53%,0.4)] transition-shadow"
-              style={{ boxShadow: "var(--shadow-border)", minHeight: "200px" }}
-            />
-          </div>
+
+          {reviewResult ? (
+            <div className="flex-1 overflow-y-auto px-5 py-4 writing-review-content">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h2: ({ children, ...props }) => (
+                    <h2 className="text-[15px] font-semibold text-[var(--fg-primary)] mt-6 mb-2 first:mt-0 flex items-center gap-2" {...props}>{children}</h2>
+                  ),
+                  h3: ({ children, ...props }) => (
+                    <h3 className="text-[14px] font-semibold text-[var(--fg-primary)] mt-4 mb-1.5" {...props}>{children}</h3>
+                  ),
+                  p: ({ children, ...props }) => (
+                    <p className="text-[13px] leading-[1.7] text-[var(--fg-secondary)] mb-2" {...props}>{children}</p>
+                  ),
+                  ul: ({ children, ...props }) => (
+                    <ul className="space-y-1.5 mb-3 pl-1" {...props}>{children}</ul>
+                  ),
+                  li: ({ children, ...props }) => (
+                    <li className="text-[13px] leading-[1.65] text-[var(--fg-secondary)] flex gap-1.5" {...props}>
+                      <span className="shrink-0 mt-[2px]">•</span>
+                      <span>{children}</span>
+                    </li>
+                  ),
+                  strong: ({ children, ...props }) => (
+                    <strong className="font-semibold text-[var(--fg-primary)]" {...props}>{children}</strong>
+                  ),
+                  blockquote: ({ children, ...props }) => (
+                    <blockquote className="border-l-2 border-[hsl(24,95%,53%)] pl-3 my-2 text-[13px] italic text-[var(--fg-muted)]" {...props}>{children}</blockquote>
+                  ),
+                  hr: (props) => (
+                    <hr className="my-4 border-[var(--border)]" {...props} />
+                  ),
+                }}
+              >
+                {reviewResult}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col px-5 py-4 overflow-hidden">
+              <textarea
+                id="writing-input"
+                value={userWriting}
+                onChange={e => setUserWriting(e.target.value)}
+                disabled={generating || !sourceText}
+                placeholder={language === "en"
+                  ? "Write your English translation here..."
+                  : "ここに日本語の翻訳を書いてください..."}
+                className="flex-1 w-full bg-[#fafafa] dark:bg-[#1a1a1a] rounded-[8px] px-4 py-4 text-[14px] leading-[1.8] text-[var(--fg-primary)] placeholder:text-[#ccc] resize-none focus:outline-none focus:ring-1 focus:ring-[hsl(24,95%,53%,0.4)] transition-shadow"
+                style={{ boxShadow: "var(--shadow-border)", minHeight: "200px" }}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -392,21 +548,43 @@ export default function WritingPage() {
       <div className="shrink-0 px-6 py-4 bg-white dark:bg-[#111]"
         style={{ boxShadow: "rgba(0,0,0,0.06) 0px -1px 0px 0px" }}>
         <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <p className="text-[11px] text-[#bbb] hidden sm:block">
-            Viết xong bản dịch → bấm Gửi Review để AI đánh giá
-          </p>
-          <button
-            id="btn-submit-review"
-            onClick={submitReview}
-            disabled={reviewing || !userWriting.trim() || !sourceText}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-[8px] text-[13px] font-semibold text-white transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 ml-auto"
-            style={{ background: "linear-gradient(135deg, hsl(24,95%,53%), hsl(38,92%,52%))" }}>
-            {reviewing ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Đang review...</>
-            ) : (
-              <><Send className="w-4 h-4" /> Gửi Review</>
-            )}
-          </button>
+          {reviewResult ? (
+            <>
+              <p className="text-[11px] text-[#bbb] hidden sm:block">
+                Xem kết quả đánh giá bên phải. Bấm nút để thử lại.
+              </p>
+              <div className="flex items-center gap-2 ml-auto">
+                <button onClick={tryAgain}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-[13px] font-medium text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] transition-colors cursor-pointer"
+                  style={{ boxShadow: "var(--shadow-border)" }}>
+                  <RefreshCw className="w-3.5 h-3.5" /> Thử đề mới
+                </button>
+                <button onClick={reset}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-[8px] text-[13px] font-semibold text-white cursor-pointer hover:opacity-90 transition-opacity"
+                  style={{ background: "linear-gradient(135deg, hsl(24,95%,53%), hsl(38,92%,52%))" }}>
+                  <RotateCcw className="w-3.5 h-3.5" /> Bắt đầu lại
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-[11px] text-[#bbb] hidden sm:block">
+                Viết xong bản dịch → bấm Gửi Review để AI đánh giá
+              </p>
+              <button
+                id="btn-submit-review"
+                onClick={submitReview}
+                disabled={reviewing || !userWriting.trim() || !sourceText}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-[8px] text-[13px] font-semibold text-white transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 ml-auto"
+                style={{ background: "linear-gradient(135deg, hsl(24,95%,53%), hsl(38,92%,52%))" }}>
+                {reviewing ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Đang review...</>
+                ) : (
+                  <><Send className="w-4 h-4" /> Gửi Review</>
+                )}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

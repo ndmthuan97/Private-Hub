@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, RotateCcw, RefreshCw, ArrowLeft, Loader2, Volume2, PenLine } from "lucide-react";
+import { Send, RotateCcw, RefreshCw, ArrowLeft, Loader2, Volume2, PenLine, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Tip } from "@/components/ui/tip";
@@ -68,7 +68,12 @@ function parseReply(raw: string): { main: string; correction: string | null } {
   return { main: raw.slice(0, idx).trim(), correction: raw.slice(idx).trim() };
 }
 
-function MessageBubble({ msg }: { msg: Message }) {
+function MessageBubble({ msg, isLast, onSuggest, loadingSuggestions }: {
+  msg: Message;
+  isLast?: boolean;
+  onSuggest?: () => void;
+  loadingSuggestions?: boolean;
+}) {
   const isUser = msg.role === "user";
   const { main, correction } = isUser ? { main: msg.content, correction: null } : parseReply(msg.content);
   const speak = () => {
@@ -100,12 +105,27 @@ function MessageBubble({ msg }: { msg: Message }) {
           </div>
         )}
         {!isUser && (
-          <Tip label="Nghe phát âm" side="bottom">
-            <button onClick={speak}
-              className="flex items-center justify-center w-6 h-6 rounded-full text-[var(--fg-muted)] hover:text-[var(--fg-secondary)] hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer">
-              <Volume2 className="w-3 h-3" />
-            </button>
-          </Tip>
+          <div className="flex items-center gap-1">
+            <Tip label="Nghe phát âm" side="bottom">
+              <button onClick={speak}
+                className="flex items-center justify-center w-6 h-6 rounded-full text-[var(--fg-muted)] hover:text-[var(--fg-secondary)] hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer">
+                <Volume2 className="w-3 h-3" />
+              </button>
+            </Tip>
+            {isLast && onSuggest && (
+              <Tip label="Gợi ý trả lời (Gemini)" side="bottom">
+                <button onClick={onSuggest} disabled={loadingSuggestions}
+                  className={cn(
+                    "flex items-center justify-center w-6 h-6 rounded-full transition-colors cursor-pointer",
+                    loadingSuggestions
+                      ? "text-[hsl(45,93%,47%)] animate-pulse"
+                      : "text-[var(--fg-muted)] hover:text-[hsl(45,93%,47%)] hover:bg-[hsl(45,93%,47%,0.1)]"
+                  )}>
+                  {loadingSuggestions ? <Loader2 className="w-3 h-3 animate-spin" /> : <Lightbulb className="w-3 h-3" />}
+                </button>
+              </Tip>
+            )}
+          </div>
         )}
       </div>
       {isUser && (
@@ -165,6 +185,8 @@ export default function ConversationPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLTextAreaElement>(null);
   const [customTopic, setCustomTopic] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -228,6 +250,7 @@ export default function ConversationPage() {
     const next = [...messages, userMsg];
     setMessages(next);
     setInput("");
+    setSuggestions([]);
     setSending(true);
     try {
       const res = await fetch("/api/conversation", {
@@ -246,7 +269,45 @@ export default function ConversationPage() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
-  const reset = () => { setMessages([]); setSelectedTopic(null); setStep("language"); };
+  const reset = () => { setMessages([]); setSelectedTopic(null); setSuggestions([]); setStep("language"); };
+
+  const fetchSuggestions = useCallback(async () => {
+    if (loadingSuggestions || !selectedTopic || messages.length === 0) return;
+    setLoadingSuggestions(true);
+    setSuggestions([]);
+    try {
+      const res = await fetch("/api/conversation/suggest", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages, language, scenario: selectedTopic.prompt }),
+      });
+      const json = await res.json();
+      if (json.statusCode === 200 && json.data?.suggestions?.length) {
+        setSuggestions(json.data.suggestions);
+      } else toast.error(json.message || "Không thể tạo gợi ý");
+    } catch { toast.error("Lỗi kết nối Gemini"); }
+    finally { setLoadingSuggestions(false); }
+  }, [loadingSuggestions, selectedTopic, messages, language]);
+
+  const applySuggestion = useCallback(async (text: string) => {
+    if (sending || !selectedTopic) return;
+    setSuggestions([]);
+    const userMsg: Message = { role: "user", content: text };
+    const next = [...messages, userMsg];
+    setMessages(next);
+    setInput("");
+    setSending(true);
+    try {
+      const res = await fetch("/api/conversation", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: next, language, persona, scenario: selectedTopic.prompt, jlptLevel }),
+      });
+      const json = await res.json();
+      if (json.statusCode === 200) {
+        setMessages(prev => [...prev, { role: "assistant", content: json.data.reply }]);
+      } else toast.error("AI không phản hồi, thử lại nhé");
+    } catch { toast.error("Lỗi kết nối"); }
+    finally { setSending(false); inputRef.current?.focus(); }
+  }, [sending, selectedTopic, messages, language, persona, jlptLevel]);
 
   /* ── Step 1: Language ─────────────────────────────────────────── */
   if (step === "language") return (
@@ -410,14 +471,38 @@ export default function ConversationPage() {
       />
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <div className="max-w-2xl mx-auto space-y-4">
-          {messages.map((msg, i) => <MessageBubble key={i} msg={msg} />)}
+          {messages.map((msg, i) => (
+            <MessageBubble
+              key={i}
+              msg={msg}
+              isLast={!sending && msg.role === "assistant" && i === messages.length - 1}
+              onSuggest={fetchSuggestions}
+              loadingSuggestions={loadingSuggestions}
+            />
+          ))}
           {sending && <TypingIndicator />}
           <div ref={bottomRef} />
         </div>
       </div>
-      <div className="shrink-0 px-6 py-4 bg-white dark:bg-[#111]"
+      <div className="shrink-0 px-6 py-4 bg-white dark:bg-[#111]" id="chat-footer"
         style={{ boxShadow: "rgba(0,0,0,0.06) 0px -1px 0px 0px" }}>
-        <div className="max-w-2xl mx-auto flex gap-2 items-end">
+        <div className="max-w-2xl mx-auto space-y-2.5">
+          {/* Gemini suggestion chips */}
+          {suggestions.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 animate-fade-up">
+              <span className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-widest text-[hsl(45,93%,47%)] mr-1">
+                <Lightbulb className="w-3 h-3" /> Gợi ý
+              </span>
+              {suggestions.map((s, i) => (
+                <button key={i} onClick={() => applySuggestion(s)} disabled={sending}
+                  className="px-3 py-1.5 rounded-full text-[12px] font-medium text-[var(--fg-secondary)] bg-[var(--bg-elevated)] hover:text-[hsl(160,84%,38%)] hover:ring-1 hover:ring-[hsl(160,84%,42%,0.4)] transition-all duration-150 cursor-pointer disabled:opacity-40"
+                  style={{ boxShadow: "var(--shadow-border)" }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2 items-end">
           <div className="flex-1 rounded-[8px] overflow-hidden" style={{ boxShadow: "var(--shadow-border)" }}>
             <textarea ref={inputRef} id="chat-input" rows={1}
               placeholder={language === "en" ? "Type your message..." : "メッセージを入力..."}
@@ -431,6 +516,7 @@ export default function ConversationPage() {
             className="flex h-11 w-11 items-center justify-center rounded-[8px] bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 shrink-0">
             {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
+        </div>
         </div>
         <p className="text-center text-[11px] text-[#bbb] mt-2">Enter để gửi · Shift+Enter xuống dòng</p>
       </div>

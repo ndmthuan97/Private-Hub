@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { Check, Pencil, Trash2, X, AlertTriangle, Loader2, Save } from "lucide-react";
+import { Pencil, Trash2, X, AlertTriangle, PieChart, History } from "lucide-react";
 import { formatVND } from "@/lib/utils";
 import { Tip } from "@/components/ui/tip";
 
@@ -106,85 +106,54 @@ export function DetailDialog({
   const total  = parseFloat(entry.totalAmount);
   const deposits = entry.deposits ?? [];
   const [tab, setTab]     = useState<"overview" | "history">("overview");
-  const [spent, setSpent] = useState<Record<string, string>>(() => {
-    const m: Record<string, string> = {};
-    allocs.forEach(a => { m[a.key] = a.spent ? String(a.spent) : ""; });
-    return m;
-  });
-  const [saving, setSaving] = useState(false);
   const [delOpen, setDelOpen] = useState(false);
-
-  function parseAmt(v: string): number {
-    return parseFloat(v.replace(/\./g, "").replace(/,/g, ".")) || 0;
-  }
-
-  const totalSpent = Object.values(spent).reduce((s, v) => s + parseAmt(v), 0);
-
-  async function save() {
-    setSaving(true);
-    const spentAmounts: Record<string, number> = {};
-    Object.entries(spent).forEach(([k,v]) => { spentAmounts[k] = parseAmt(v); });
-    try {
-      const r = await fetch(`/api/budget/${entry.id}`, {
-        method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ spentAmounts }),
-      });
-      const j = await r.json();
-      if (j.statusCode === 200) { toast.success("✅ Đã lưu chi tiêu"); onSaved(); }
-      else toast.error(j.message);
-    } catch { toast.error("Lỗi kết nối"); }
-    finally { setSaving(false); }
-  }
 
   if (typeof window === "undefined") return null;
   return createPortal(
     <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}
       onClick={onClose}>
-      <div className="w-full sm:max-w-4xl rounded-t-[16px] sm:rounded-[12px] bg-white dark:bg-[#111] overflow-hidden"
+      <div className="w-full sm:max-w-md rounded-t-[16px] sm:rounded-[12px] bg-white dark:bg-[#111] overflow-hidden"
         style={{ boxShadow: "var(--shadow-card)", maxHeight: "90vh", overflowY: "auto" }}
         onClick={e => e.stopPropagation()}>
 
-        {/* ── Header with inline tabs ── */}
+        {/* ── Header ── */}
         <div className="flex items-center justify-between px-5 py-3"
           style={{ boxShadow: "rgba(0,0,0,0.06) 0px 1px 0px 0px" }}>
           <div className="flex items-center gap-3 min-w-0">
             <p className="text-[18px] font-semibold text-[#171717] dark:text-[#f5f5f5] shrink-0">
               {MONTHS[entry.month-1]} {entry.year}
             </p>
-            {/* Tab pills */}
-            <div className="flex items-center gap-1 p-[3px] rounded-[7px] bg-[#f5f5f5] dark:bg-[#1a1a1a]"
-              style={{ boxShadow: "var(--shadow-border)" }}>
-              <button
-                onClick={() => setTab("overview")}
-                className={`h-6 px-2.5 rounded-[5px] text-[11px] font-semibold transition-all cursor-pointer ${
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Tip label="Tổng quan">
+              <button onClick={() => setTab("overview")}
+                className={`flex h-8 w-8 items-center justify-center rounded-[6px] transition-colors cursor-pointer ${
                   tab === "overview"
-                    ? "bg-white dark:bg-[#2a2a2a] text-[#171717] dark:text-[#f5f5f5]"
-                    : "text-[#999] hover:text-[#555] dark:hover:text-[#bbb]"
+                    ? "text-[#171717] dark:text-[#f5f5f5] bg-[#f5f5f5] dark:bg-[#2a2a2a]"
+                    : "text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5]"
                 }`}
-                style={tab === "overview" ? { boxShadow: "var(--shadow-border)" } : undefined}>
-                Tổng quan
+                style={{ boxShadow: "var(--shadow-border)" }}>
+                <PieChart className="w-4 h-4" />
               </button>
-              <button
-                onClick={() => setTab("history")}
-                className={`h-6 px-2.5 rounded-[5px] text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+            </Tip>
+            <Tip label="Lịch sử nhập">
+              <button onClick={() => setTab("history")}
+                className={`relative flex h-8 w-8 items-center justify-center rounded-[6px] transition-colors cursor-pointer ${
                   tab === "history"
-                    ? "bg-white dark:bg-[#2a2a2a] text-[#171717] dark:text-[#f5f5f5]"
-                    : "text-[#999] hover:text-[#555] dark:hover:text-[#bbb]"
+                    ? "text-[#171717] dark:text-[#f5f5f5] bg-[#f5f5f5] dark:bg-[#2a2a2a]"
+                    : "text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5]"
                 }`}
-                style={tab === "history" ? { boxShadow: "var(--shadow-border)" } : undefined}>
-                Lịch sử nhập
+                style={{ boxShadow: "var(--shadow-border)" }}>
+                <History className="w-4 h-4" />
                 {deposits.length > 0 && (
-                  <span className={`inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full text-[9px] font-bold ${
-                    tab === "history" ? "bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717]" : "bg-[#e0e0e0] dark:bg-[#333] text-[#666] dark:text-[#999]"
-                  }`}>
+                  <span className="absolute -top-1 -right-1 flex items-center justify-center h-3.5 min-w-[14px] px-0.5 rounded-full text-[8px] font-bold bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717]">
                     {deposits.length}
                   </span>
                 )}
               </button>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
+            </Tip>
+            <div className="w-px h-5 bg-[#e5e5e5] dark:bg-[#333] mx-0.5" />
             <Tip label="Chỉnh sửa">
               <button onClick={onEdit}
                 className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#666] dark:text-[#888] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
@@ -210,76 +179,14 @@ export function DetailDialog({
         </div>
 
         {/* ── Tab: Tổng quan ── */}
-        {tab === "overview" && (
-          <>
-            <div className="flex flex-col md:flex-row md:items-stretch" style={{ boxShadow: "rgba(0,0,0,0.04) 0px 1px 0px 0px" }}>
-              <div className="w-full md:w-[420px] md:shrink-0 p-2 flex items-center justify-center md:border-r border-b md:border-b-0 border-[#f0f0f0] dark:border-[#222]">
-                <HexChart allocs={allocs} />
-              </div>
-
-              <div className="flex-1 px-4 py-3 min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-[#999] mb-2.5">Theo dõi chi tiêu</p>
-                <div className="space-y-3">
-                  {allocs.map(a => {
-                    const spentVal  = parseAmt(spent[a.key] || "0");
-                    const remaining = a.amount - spentVal;
-                    const done      = spentVal >= a.amount && a.amount > 0;
-                    const pct       = a.amount > 0 ? Math.min(100, (spentVal / a.amount) * 100) : 0;
-                    return (
-                      <div key={a.key}>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[12px] font-semibold flex-1 truncate" style={{ color: a.color }}>{a.label}</span>
-                          <input type="text" inputMode="numeric" placeholder="0"
-                            value={spent[a.key] ?? ""}
-                            onChange={e => setSpent(s => ({ ...s, [a.key]: e.target.value }))}
-                            className="w-20 sm:w-28 h-7 px-2 text-[12px] text-right rounded-[5px] tabular-nums bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5]"
-                            style={{ boxShadow: "var(--shadow-border)" }} />
-                          <div className="w-20 sm:w-28 shrink-0 flex items-center justify-end">
-                            {done ? (
-                              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-500">
-                                <Check className="w-3.5 h-3.5" />
-                              </span>
-                            ) : remaining > 0 ? (
-                              <button
-                                onClick={() => setSpent(s => ({ ...s, [a.key]: String(a.amount) }))}
-                                className="w-full h-7 px-2 text-[11px] text-right rounded-[5px] tabular-nums text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
-                                style={{ boxShadow: "var(--shadow-border)" }}>
-                                {formatVND(remaining)}
-                              </button>
-                            ) : <div className="h-7 w-28" />}
-                          </div>
-                        </div>
-                        <div className="h-1 rounded-full bg-[#f0f0f0] dark:bg-[#2a2a2a] overflow-hidden">
-                          <div className="h-full rounded-full transition-all duration-500"
-                            style={{ width: `${pct}%`, background: a.color }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between px-5 py-3"
-              style={{ boxShadow: "rgba(0,0,0,0.06) 0px -1px 0px 0px" }}>
-              <div className="text-[13px] text-[#999]">
-                Đã dùng <strong className="text-[#171717] dark:text-[#f5f5f5]">{formatVND(totalSpent)}</strong>
-                {" "}/ {formatVND(total)}
-                {total > 0 && <span className="ml-1 text-[#bbb]">({Math.round((totalSpent/total)*100)}%)</span>}
-              </div>
-              <Tip label={saving ? "Đang lưu..." : "Lưu chi tiêu"}>
-                <button onClick={save} disabled={saving}
-                  className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-[#171717] dark:bg-[#f5f5f5] text-white dark:text-[#171717] hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40">
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                </button>
-              </Tip>
-            </div>
-          </>
-        )}
+        <div style={{ display: tab === "overview" ? "block" : "none" }}>
+          <div className="flex items-center justify-center p-2">
+            <HexChart allocs={allocs} />
+          </div>
+        </div>
 
         {/* ── Tab: Lịch sử nhập ── */}
-        {tab === "history" && (
-          <div className="px-5 py-4">
+        <div className="px-5 py-4" style={{ display: tab === "history" ? "block" : "none" }}>
             {deposits.length === 0 ? (
               <p className="py-10 text-center text-[13px] text-[#999]">Chưa có đợt nhập nào.</p>
             ) : (
@@ -326,8 +233,6 @@ export function DetailDialog({
               </div>
             )}
           </div>
-        )}
-      </div>
 
       {delOpen && (
         <div className="absolute inset-0 flex items-center justify-center p-4" onClick={() => setDelOpen(false)}>
@@ -352,6 +257,7 @@ export function DetailDialog({
           </div>
         </div>
       )}
+      </div>
     </div>,
     document.body
   );
