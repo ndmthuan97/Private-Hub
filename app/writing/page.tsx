@@ -381,76 +381,192 @@ export default function WritingPage() {
         }
       />
 
-      <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
-        {/* Left — Source text */}
-        <div className="lg:w-1/2 border-b lg:border-b-0 lg:border-r border-[rgba(0,0,0,0.06)] dark:border-[rgba(255,255,255,0.06)] flex flex-col overflow-hidden">
-          <div className="px-5 py-3 shrink-0 flex items-center justify-between"
-            style={{ boxShadow: "rgba(0,0,0,0.04) 0px 1px 0px 0px" }}>
-            <p className="text-[11px] font-medium uppercase tracking-widest text-[#999]">📄 Đoạn văn gốc (Tiếng Việt)</p>
-            <button onClick={() => setSourceCollapsed(v => !v)}
-              className="lg:hidden flex h-6 w-6 items-center justify-center rounded text-[#999] hover:text-[#666] transition-colors cursor-pointer">
-              {sourceCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-          <div className={cn(
-            "flex-1 overflow-y-auto px-5 py-4 transition-all duration-200",
-            sourceCollapsed ? "max-h-0 lg:max-h-none overflow-hidden py-0" : "max-h-[40vh] lg:max-h-none"
-          )}>
-            {generating ? (
-              <div className="flex flex-col items-center justify-center h-full gap-3">
-                <Loader2 className="h-6 w-6 animate-spin text-[hsl(24,95%,53%)]" />
-                <p className="text-[12px] text-[#999]">Đang tạo đoạn văn...</p>
-              </div>
-            ) : (() => {
-              // Split context line from body
-              const lines = sourceText.split("\n");
-              const ctxIdx = lines.findIndex(l => /^(📌\s*)?(\*{0,2})?\s*Ngữ cảnh/i.test(l.replace(/[*#]/g, "")));
-              let ctxLine = "";
-              let body = sourceText;
-              if (ctxIdx !== -1) {
-                ctxLine = lines[ctxIdx]
-                  .replace(/^📌\s*/, "")
-                  .replace(/\*{1,2}/g, "")
-                  .replace(/\(?\s*Không cần dịch[^)]*\)?\s*$/i, "")
-                  .trim();
-                body = [...lines.slice(0, ctxIdx), ...lines.slice(ctxIdx + 1)].join("\n").trim();
-              }
-              return (
-                <div className="space-y-3">
-                  {ctxLine && (
-                    <div className="px-3 py-2 rounded-[8px] bg-[#f5f5f5] dark:bg-[#1a1a1a]"
-                      style={{ boxShadow: "var(--shadow-border)" }}>
-                      <p className="text-[12px] text-[#888] dark:text-[#777] italic">
-                        {ctxLine}
-                      </p>
-                    </div>
-                  )}
-                  <div className="text-[14px] leading-[1.8] text-[var(--fg-primary)] whitespace-pre-wrap">{body}</div>
-
-                  {/* Show user's writing below source when review is visible */}
-                  {reviewResult && userWriting && (
-                    <div className="mt-4 pt-4" style={{ boxShadow: "rgba(0,0,0,0.06) 0px -1px 0px 0px" }}>
-                      <p className="text-[11px] font-medium uppercase tracking-widest text-[#999] mb-2">
-                        ✏️ Bài viết của bạn ({language === "en" ? "English" : "日本語"})
-                      </p>
-                      <div className="px-3 py-2.5 rounded-[8px] bg-[#f5f5f5] dark:bg-[#1a1a1a]"
-                        style={{ boxShadow: "var(--shadow-border)" }}>
-                        <p className="text-[13px] leading-[1.7] text-[var(--fg-primary)] whitespace-pre-wrap">{userWriting}</p>
+      {/* When review is present on mobile: single-column vertical scroll */}
+      {reviewResult ? (
+        <>
+          {/* Mobile: single-column scrollable layout */}
+          <div className="flex-1 overflow-y-auto lg:hidden">
+            <div className="px-5 py-4 space-y-4">
+              {/* Source text section */}
+              <details className="group rounded-[8px] bg-white dark:bg-[#111] overflow-hidden"
+                style={{ boxShadow: "var(--shadow-card)" }}>
+                <summary className="px-4 py-3 cursor-pointer flex items-center gap-3 text-[13px] font-medium text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] transition-colors list-none [&::-webkit-details-marker]:hidden">
+                  <ChevronDown className="w-3.5 h-3.5 shrink-0 transition-transform duration-200 group-open:rotate-180" />
+                  <span>📄 Đoạn văn gốc (Tiếng Việt)</span>
+                </summary>
+                <div className="px-4 pb-4">
+                  {(() => {
+                    const lines = sourceText.split("\n");
+                    const ctxIdx = lines.findIndex(l => /^(📌\s*)?(\*{0,2})?\s*Ngữ cảnh/i.test(l.replace(/[*#]/g, "")));
+                    let ctxLine = "";
+                    let body = sourceText;
+                    if (ctxIdx !== -1) {
+                      ctxLine = lines[ctxIdx]
+                        .replace(/^📌\s*/, "")
+                        .replace(/\*{1,2}/g, "")
+                        .replace(/\(?\s*Không cần dịch[^)]*\)?\s*$/i, "")
+                        .trim();
+                      body = [...lines.slice(0, ctxIdx), ...lines.slice(ctxIdx + 1)].join("\n").trim();
+                    }
+                    return (
+                      <div className="space-y-3">
+                        {ctxLine && (
+                          <div className="px-3 py-2 rounded-[8px] bg-[#f5f5f5] dark:bg-[#1a1a1a]"
+                            style={{ boxShadow: "var(--shadow-border)" }}>
+                            <p className="text-[12px] text-[#888] dark:text-[#777] italic">{ctxLine}</p>
+                          </div>
+                        )}
+                        <div className="text-[14px] leading-[1.8] text-[var(--fg-primary)] whitespace-pre-wrap">{body}</div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
-              );
-            })()}
-          </div>
-        </div>
+              </details>
 
-        {/* Right — User writing / Review result */}
-        <div className="lg:w-1/2 flex flex-col overflow-hidden">
-          <div className="px-5 py-3 shrink-0 flex items-center justify-between"
-            style={{ boxShadow: "rgba(0,0,0,0.04) 0px 1px 0px 0px" }}>
-            {reviewResult ? (
-              <>
+              {/* User writing section */}
+              <div className="rounded-[8px] bg-[hsl(24,95%,53%,0.04)] px-4 py-3"
+                style={{ boxShadow: "inset 0 0 0 1px hsl(24,95%,53%,0.12)" }}>
+                <p className="text-[11px] font-medium uppercase tracking-widest text-[hsl(24,95%,45%)] dark:text-[hsl(24,95%,60%)] mb-2">
+                  ✏️ Bài viết của bạn ({language === "en" ? "English" : "日本語"})
+                  <span className="ml-2 text-[hsl(24,95%,53%)]">{countWords(userWriting)} từ</span>
+                </p>
+                <p className="text-[13px] leading-[1.7] text-[var(--fg-primary)] whitespace-pre-wrap">{userWriting}</p>
+              </div>
+
+              {/* AI Review result */}
+              <div className="rounded-[8px] bg-white dark:bg-[#111] overflow-hidden animate-fade-up"
+                style={{ boxShadow: "var(--shadow-card)" }}>
+                <div className="px-4 py-3 flex items-center justify-between"
+                  style={{ boxShadow: "rgba(0,0,0,0.04) 0px 1px 0px 0px" }}>
+                  <p className="text-[11px] font-medium uppercase tracking-widest text-[#999] flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full gradient-writing flex items-center justify-center shrink-0">
+                      <span className="text-white text-[8px] font-[700]">AI</span>
+                    </span>
+                    Kết quả Review
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <Tip label="Copy kết quả">
+                      <button onClick={copyReview}
+                        className="flex h-6 w-6 items-center justify-center rounded text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
+                        style={{ boxShadow: "var(--shadow-border)" }}>
+                        {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                    </Tip>
+                    <Tip label="Quay lại chỉnh sửa">
+                      <button onClick={() => setReviewResult("")}
+                        className="flex h-6 w-6 items-center justify-center rounded text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
+                        style={{ boxShadow: "var(--shadow-border)" }}>
+                        <PenLine className="w-3 h-3" />
+                      </button>
+                    </Tip>
+                  </div>
+                </div>
+                <div className="px-4 py-4 writing-review-content">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      h2: ({ children, ...props }) => (
+                        <h2 className="text-[15px] font-semibold text-[var(--fg-primary)] mt-6 mb-2 first:mt-0 flex items-center gap-2" {...props}>{children}</h2>
+                      ),
+                      h3: ({ children, ...props }) => (
+                        <h3 className="text-[14px] font-semibold text-[var(--fg-primary)] mt-4 mb-1.5" {...props}>{children}</h3>
+                      ),
+                      p: ({ children, ...props }) => (
+                        <p className="text-[13px] leading-[1.7] text-[var(--fg-secondary)] mb-2" {...props}>{children}</p>
+                      ),
+                      ul: ({ children, ...props }) => (
+                        <ul className="space-y-1.5 mb-3 pl-1" {...props}>{children}</ul>
+                      ),
+                      li: ({ children, ...props }) => (
+                        <li className="text-[13px] leading-[1.65] text-[var(--fg-secondary)] flex gap-1.5" {...props}>
+                          <span className="shrink-0 mt-[2px]">•</span>
+                          <span>{children}</span>
+                        </li>
+                      ),
+                      strong: ({ children, ...props }) => (
+                        <strong className="font-semibold text-[var(--fg-primary)]" {...props}>{children}</strong>
+                      ),
+                      blockquote: ({ children, ...props }) => (
+                        <blockquote className="border-l-2 border-[hsl(24,95%,53%)] pl-3 my-2 text-[13px] italic text-[var(--fg-muted)]" {...props}>{children}</blockquote>
+                      ),
+                      hr: (props) => (
+                        <hr className="my-4 border-[var(--border)]" {...props} />
+                      ),
+                    }}
+                  >
+                    {reviewResult}
+                  </ReactMarkdown>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex items-center justify-center gap-3 pb-4">
+                <button onClick={tryAgain}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-[13px] font-medium text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] transition-colors cursor-pointer"
+                  style={{ boxShadow: "var(--shadow-border)" }}>
+                  <RefreshCw className="w-3.5 h-3.5" /> Thử đề mới
+                </button>
+                <button onClick={reset}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-[8px] text-[13px] font-semibold text-white cursor-pointer hover:opacity-90 transition-opacity"
+                  style={{ background: "linear-gradient(135deg, hsl(24,95%,53%), hsl(38,92%,52%))" }}>
+                  <RotateCcw className="w-3.5 h-3.5" /> Bắt đầu lại
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop: keep the original side-by-side layout */}
+          <div className="flex-1 overflow-hidden hidden lg:flex lg:flex-row">
+            {/* Left — Source text + user writing */}
+            <div className="lg:w-1/2 lg:border-r border-[rgba(0,0,0,0.06)] dark:border-[rgba(255,255,255,0.06)] flex flex-col overflow-hidden">
+              <div className="px-5 py-3 shrink-0 flex items-center justify-between"
+                style={{ boxShadow: "rgba(0,0,0,0.04) 0px 1px 0px 0px" }}>
+                <p className="text-[11px] font-medium uppercase tracking-widest text-[#999]">📄 Đoạn văn gốc (Tiếng Việt)</p>
+              </div>
+              <div className="flex-1 overflow-y-auto px-5 py-4">
+                {(() => {
+                  const lines = sourceText.split("\n");
+                  const ctxIdx = lines.findIndex(l => /^(📌\s*)?(\*{0,2})?\s*Ngữ cảnh/i.test(l.replace(/[*#]/g, "")));
+                  let ctxLine = "";
+                  let body = sourceText;
+                  if (ctxIdx !== -1) {
+                    ctxLine = lines[ctxIdx]
+                      .replace(/^📌\s*/, "")
+                      .replace(/\*{1,2}/g, "")
+                      .replace(/\(?\s*Không cần dịch[^)]*\)?\s*$/i, "")
+                      .trim();
+                    body = [...lines.slice(0, ctxIdx), ...lines.slice(ctxIdx + 1)].join("\n").trim();
+                  }
+                  return (
+                    <div className="space-y-3">
+                      {ctxLine && (
+                        <div className="px-3 py-2 rounded-[8px] bg-[#f5f5f5] dark:bg-[#1a1a1a]"
+                          style={{ boxShadow: "var(--shadow-border)" }}>
+                          <p className="text-[12px] text-[#888] dark:text-[#777] italic">{ctxLine}</p>
+                        </div>
+                      )}
+                      <div className="text-[14px] leading-[1.8] text-[var(--fg-primary)] whitespace-pre-wrap">{body}</div>
+                      {userWriting && (
+                        <div className="mt-4 pt-4" style={{ boxShadow: "rgba(0,0,0,0.06) 0px -1px 0px 0px" }}>
+                          <p className="text-[11px] font-medium uppercase tracking-widest text-[#999] mb-2">
+                            ✏️ Bài viết của bạn ({language === "en" ? "English" : "日本語"})
+                          </p>
+                          <div className="px-3 py-2.5 rounded-[8px] bg-[#f5f5f5] dark:bg-[#1a1a1a]"
+                            style={{ boxShadow: "var(--shadow-border)" }}>
+                            <p className="text-[13px] leading-[1.7] text-[var(--fg-primary)] whitespace-pre-wrap">{userWriting}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Right — Review result */}
+            <div className="lg:w-1/2 flex flex-col overflow-hidden">
+              <div className="px-5 py-3 shrink-0 flex items-center justify-between"
+                style={{ boxShadow: "rgba(0,0,0,0.04) 0px 1px 0px 0px" }}>
                 <p className="text-[11px] font-medium uppercase tracking-widest text-[#999] flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full gradient-writing flex items-center justify-center shrink-0">
                     <span className="text-white text-[8px] font-[700]">AI</span>
@@ -473,84 +589,51 @@ export default function WritingPage() {
                     </button>
                   </Tip>
                 </div>
-              </>
-            ) : (
-              <>
-                <p className="text-[11px] font-medium uppercase tracking-widest text-[#999]">
-                  ✏️ Bài viết của bạn ({language === "en" ? "English" : "日本語"})
-                </p>
-                <span className={cn(
-                  "text-[11px] font-medium tabular-nums",
-                  countWords(userWriting) > 0 ? "text-[hsl(24,95%,53%)]" : "text-[#ccc]"
-                )}>
-                  {countWords(userWriting)} từ
-                </span>
-              </>
-            )}
+              </div>
+              <div className="flex-1 overflow-y-auto px-5 py-4 writing-review-content">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    h2: ({ children, ...props }) => (
+                      <h2 className="text-[15px] font-semibold text-[var(--fg-primary)] mt-6 mb-2 first:mt-0 flex items-center gap-2" {...props}>{children}</h2>
+                    ),
+                    h3: ({ children, ...props }) => (
+                      <h3 className="text-[14px] font-semibold text-[var(--fg-primary)] mt-4 mb-1.5" {...props}>{children}</h3>
+                    ),
+                    p: ({ children, ...props }) => (
+                      <p className="text-[13px] leading-[1.7] text-[var(--fg-secondary)] mb-2" {...props}>{children}</p>
+                    ),
+                    ul: ({ children, ...props }) => (
+                      <ul className="space-y-1.5 mb-3 pl-1" {...props}>{children}</ul>
+                    ),
+                    li: ({ children, ...props }) => (
+                      <li className="text-[13px] leading-[1.65] text-[var(--fg-secondary)] flex gap-1.5" {...props}>
+                        <span className="shrink-0 mt-[2px]">•</span>
+                        <span>{children}</span>
+                      </li>
+                    ),
+                    strong: ({ children, ...props }) => (
+                      <strong className="font-semibold text-[var(--fg-primary)]" {...props}>{children}</strong>
+                    ),
+                    blockquote: ({ children, ...props }) => (
+                      <blockquote className="border-l-2 border-[hsl(24,95%,53%)] pl-3 my-2 text-[13px] italic text-[var(--fg-muted)]" {...props}>{children}</blockquote>
+                    ),
+                    hr: (props) => (
+                      <hr className="my-4 border-[var(--border)]" {...props} />
+                    ),
+                  }}
+                >
+                  {reviewResult}
+                </ReactMarkdown>
+              </div>
+            </div>
           </div>
 
-          {reviewResult ? (
-            <div className="flex-1 overflow-y-auto px-5 py-4 writing-review-content">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  h2: ({ children, ...props }) => (
-                    <h2 className="text-[15px] font-semibold text-[var(--fg-primary)] mt-6 mb-2 first:mt-0 flex items-center gap-2" {...props}>{children}</h2>
-                  ),
-                  h3: ({ children, ...props }) => (
-                    <h3 className="text-[14px] font-semibold text-[var(--fg-primary)] mt-4 mb-1.5" {...props}>{children}</h3>
-                  ),
-                  p: ({ children, ...props }) => (
-                    <p className="text-[13px] leading-[1.7] text-[var(--fg-secondary)] mb-2" {...props}>{children}</p>
-                  ),
-                  ul: ({ children, ...props }) => (
-                    <ul className="space-y-1.5 mb-3 pl-1" {...props}>{children}</ul>
-                  ),
-                  li: ({ children, ...props }) => (
-                    <li className="text-[13px] leading-[1.65] text-[var(--fg-secondary)] flex gap-1.5" {...props}>
-                      <span className="shrink-0 mt-[2px]">•</span>
-                      <span>{children}</span>
-                    </li>
-                  ),
-                  strong: ({ children, ...props }) => (
-                    <strong className="font-semibold text-[var(--fg-primary)]" {...props}>{children}</strong>
-                  ),
-                  blockquote: ({ children, ...props }) => (
-                    <blockquote className="border-l-2 border-[hsl(24,95%,53%)] pl-3 my-2 text-[13px] italic text-[var(--fg-muted)]" {...props}>{children}</blockquote>
-                  ),
-                  hr: (props) => (
-                    <hr className="my-4 border-[var(--border)]" {...props} />
-                  ),
-                }}
-              >
-                {reviewResult}
-              </ReactMarkdown>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col px-5 py-4 overflow-hidden">
-              <textarea
-                id="writing-input"
-                value={userWriting}
-                onChange={e => setUserWriting(e.target.value)}
-                disabled={generating || !sourceText}
-                placeholder={language === "en"
-                  ? "Write your English translation here..."
-                  : "ここに日本語の翻訳を書いてください..."}
-                className="flex-1 w-full bg-[#fafafa] dark:bg-[#1a1a1a] rounded-[8px] px-4 py-4 text-[14px] leading-[1.8] text-[var(--fg-primary)] placeholder:text-[#ccc] resize-none focus:outline-none focus:ring-1 focus:ring-[hsl(24,95%,53%,0.4)] transition-shadow"
-                style={{ boxShadow: "var(--shadow-border)", minHeight: "200px" }}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Bottom action bar */}
-      <div className="shrink-0 px-6 py-4 bg-white dark:bg-[#111]"
-        style={{ boxShadow: "rgba(0,0,0,0.06) 0px -1px 0px 0px" }}>
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          {reviewResult ? (
-            <>
-              <p className="text-[11px] text-[#bbb] hidden sm:block">
+          {/* Desktop bottom action bar */}
+          <div className="shrink-0 px-6 py-4 bg-white dark:bg-[#111] hidden lg:block"
+            style={{ boxShadow: "rgba(0,0,0,0.06) 0px -1px 0px 0px" }}>
+            <div className="max-w-3xl mx-auto flex items-center justify-between">
+              <p className="text-[11px] text-[#bbb]">
                 Xem kết quả đánh giá bên phải. Bấm nút để thử lại.
               </p>
               <div className="flex items-center gap-2 ml-auto">
@@ -565,9 +648,94 @@ export default function WritingPage() {
                   <RotateCcw className="w-3.5 h-3.5" /> Bắt đầu lại
                 </button>
               </div>
-            </>
-          ) : (
-            <>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* No review yet: original 2-panel layout for writing */}
+          <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
+            {/* Left — Source text */}
+            <div className="lg:w-1/2 border-b lg:border-b-0 lg:border-r border-[rgba(0,0,0,0.06)] dark:border-[rgba(255,255,255,0.06)] flex flex-col overflow-hidden">
+              <div className="px-5 py-3 shrink-0 flex items-center justify-between"
+                style={{ boxShadow: "rgba(0,0,0,0.04) 0px 1px 0px 0px" }}>
+                <p className="text-[11px] font-medium uppercase tracking-widest text-[#999]">📄 Đoạn văn gốc (Tiếng Việt)</p>
+                <button onClick={() => setSourceCollapsed(v => !v)}
+                  className="lg:hidden flex h-6 w-6 items-center justify-center rounded text-[#999] hover:text-[#666] transition-colors cursor-pointer">
+                  {sourceCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+              <div className={cn(
+                "flex-1 overflow-y-auto px-5 py-4 transition-all duration-200",
+                sourceCollapsed ? "max-h-0 lg:max-h-none overflow-hidden py-0" : "max-h-[40vh] lg:max-h-none"
+              )}>
+                {generating ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-3">
+                    <Loader2 className="h-6 w-6 animate-spin text-[hsl(24,95%,53%)]" />
+                    <p className="text-[12px] text-[#999]">Đang tạo đoạn văn...</p>
+                  </div>
+                ) : (() => {
+                  const lines = sourceText.split("\n");
+                  const ctxIdx = lines.findIndex(l => /^(📌\s*)?(\*{0,2})?\s*Ngữ cảnh/i.test(l.replace(/[*#]/g, "")));
+                  let ctxLine = "";
+                  let body = sourceText;
+                  if (ctxIdx !== -1) {
+                    ctxLine = lines[ctxIdx]
+                      .replace(/^📌\s*/, "")
+                      .replace(/\*{1,2}/g, "")
+                      .replace(/\(?\s*Không cần dịch[^)]*\)?\s*$/i, "")
+                      .trim();
+                    body = [...lines.slice(0, ctxIdx), ...lines.slice(ctxIdx + 1)].join("\n").trim();
+                  }
+                  return (
+                    <div className="space-y-3">
+                      {ctxLine && (
+                        <div className="px-3 py-2 rounded-[8px] bg-[#f5f5f5] dark:bg-[#1a1a1a]"
+                          style={{ boxShadow: "var(--shadow-border)" }}>
+                          <p className="text-[12px] text-[#888] dark:text-[#777] italic">{ctxLine}</p>
+                        </div>
+                      )}
+                      <div className="text-[14px] leading-[1.8] text-[var(--fg-primary)] whitespace-pre-wrap">{body}</div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Right — User writing textarea */}
+            <div className="lg:w-1/2 flex flex-col overflow-hidden">
+              <div className="px-5 py-3 shrink-0 flex items-center justify-between"
+                style={{ boxShadow: "rgba(0,0,0,0.04) 0px 1px 0px 0px" }}>
+                <p className="text-[11px] font-medium uppercase tracking-widest text-[#999]">
+                  ✏️ Bài viết của bạn ({language === "en" ? "English" : "日本語"})
+                </p>
+                <span className={cn(
+                  "text-[11px] font-medium tabular-nums",
+                  countWords(userWriting) > 0 ? "text-[hsl(24,95%,53%)]" : "text-[#ccc]"
+                )}>
+                  {countWords(userWriting)} từ
+                </span>
+              </div>
+              <div className="flex-1 flex flex-col px-5 py-4 overflow-hidden">
+                <textarea
+                  id="writing-input"
+                  value={userWriting}
+                  onChange={e => setUserWriting(e.target.value)}
+                  disabled={generating || !sourceText}
+                  placeholder={language === "en"
+                    ? "Write your English translation here..."
+                    : "ここに日本語の翻訳を書いてください..."}
+                  className="flex-1 w-full bg-[#fafafa] dark:bg-[#1a1a1a] rounded-[8px] px-4 py-4 text-[14px] leading-[1.8] text-[var(--fg-primary)] placeholder:text-[#ccc] resize-none focus:outline-none focus:ring-1 focus:ring-[hsl(24,95%,53%,0.4)] transition-shadow"
+                  style={{ boxShadow: "var(--shadow-border)", minHeight: "200px" }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom action bar — submit review */}
+          <div className="shrink-0 px-6 py-4 bg-white dark:bg-[#111]"
+            style={{ boxShadow: "rgba(0,0,0,0.06) 0px -1px 0px 0px" }}>
+            <div className="max-w-3xl mx-auto flex items-center justify-between">
               <p className="text-[11px] text-[#bbb] hidden sm:block">
                 Viết xong bản dịch → bấm Gửi Review để AI đánh giá
               </p>
@@ -583,10 +751,10 @@ export default function WritingPage() {
                   <><Send className="w-4 h-4" /> Gửi Review</>
                 )}
               </button>
-            </>
-          )}
-        </div>
-      </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 
