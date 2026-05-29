@@ -1,0 +1,10 @@
+import Redis from "ioredis";
+
+// Singleton — reuse across hot reloads in dev
+const globalForRedis = globalThis as unknown as { redis?: Redis };
+
+export const redis =
+  globalForRedis.redis ??
+  new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: 3 });
+
+if (process.env.NODE_ENV !== "production") globalForRedis.redis = redis;

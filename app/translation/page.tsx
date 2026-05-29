@@ -114,33 +114,33 @@ function useIsDark(): boolean {
   return dark;
 }
 
-/* ── LocalStorage Cache (3-day TTL) ──────────────────────────── */
-const LS_KEY = "ph_translation_cache";
-const TTL_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
-
-function loadCache(): CachedEntry[] {
+/* ── Redis Cache (via API) ────────────────────────────────────── */
+async function loadCache(): Promise<CachedEntry[]> {
   try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return [];
-    const entries: CachedEntry[] = JSON.parse(raw);
-    const now = Date.now();
-    // Filter out expired entries
-    const valid = entries.filter(e => now - e.createdAt < TTL_MS);
-    if (valid.length !== entries.length) localStorage.setItem(LS_KEY, JSON.stringify(valid));
-    return valid;
+    const res = await fetch("/api/translation/cache");
+    const json = await res.json();
+    return json.data ?? [];
   } catch { return []; }
 }
 
-function saveToCache(entry: CachedEntry) {
-  const entries = loadCache();
-  // Prepend new entry, keep max 10
-  const updated = [entry, ...entries.filter(e => e.id !== entry.id)].slice(0, 10);
-  localStorage.setItem(LS_KEY, JSON.stringify(updated));
+async function saveToCache(entry: CachedEntry): Promise<CachedEntry[]> {
+  try {
+    const res = await fetch("/api/translation/cache", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(entry),
+    });
+    const json = await res.json();
+    return json.data ?? [];
+  } catch { return []; }
 }
 
-function removeFromCache(id: string) {
-  const entries = loadCache().filter(e => e.id !== id);
-  localStorage.setItem(LS_KEY, JSON.stringify(entries));
+async function removeFromCache(id: string): Promise<CachedEntry[]> {
+  try {
+    const res = await fetch(`/api/translation/cache?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    const json = await res.json();
+    return json.data ?? [];
+  } catch { return []; }
 }
 
 /* ── Flag image (Windows doesn't render flag emoji) ──────────── */
@@ -361,7 +361,7 @@ export default function TranslationPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Load cache on mount
-  useEffect(() => { setHistory(loadCache()); }, []);
+  useEffect(() => { loadCache().then(setHistory); }, []);
 
   /* ── Paste convert ──────────────────────────────────────────── */
   function handleConvert() {
@@ -400,8 +400,7 @@ export default function TranslationPage() {
           result: json.data,
           createdAt: Date.now(),
         };
-        saveToCache(entry);
-        setHistory(loadCache());
+        saveToCache(entry).then(setHistory);
       } else {
         toast.error(json.message || "Không thể phân tích văn bản");
       }
@@ -433,8 +432,7 @@ export default function TranslationPage() {
   }
 
   function deleteFromHistory(id: string) {
-    removeFromCache(id);
-    setHistory(loadCache());
+    removeFromCache(id).then(setHistory);
   }
 
   /* ════════════════════════════════════════════════════════════

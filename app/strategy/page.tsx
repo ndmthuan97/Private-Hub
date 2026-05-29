@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback, useEffect, useRef, useMemo, isValidElement, cloneElement, createElement, Fragment } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -8,8 +8,7 @@ import {
   Plus, X, Check, Loader2, Pencil, Trash2, FileText, Link2,
   ExternalLink, ArrowLeft, Eye, Wand2, ClipboardPaste,
   FolderPlus, Folder, FolderOpen, ChevronRight, ChevronDown,
-  ChevronLeft, MoreHorizontal, Bookmark, MessageSquarePlus,
-  StickyNote,
+  ChevronLeft, MoreHorizontal,
 } from "lucide-react";
 import TurndownService from "turndown";
 import type { Roadmap, StrategyFolder } from "@/db/schema";
@@ -326,269 +325,13 @@ function FormDialog({ initial, folders, defaultFolderId, onClose, onSaved }: {
   );
 }
 
-/* ── Annotations ───────────────────────────────────── */
-interface Annotation {
-  id: string;
-  selectedText: string;
-  note: string;
-  createdAt: string;
-}
 
-function annotationKey(itemId: string) { return `ph_ann_${itemId}`; }
-
-function loadAnnotations(itemId: string): Annotation[] {
-  try { return JSON.parse(localStorage.getItem(annotationKey(itemId)) ?? "[]"); }
-  catch { return []; }
-}
-
-function saveAnnotations(itemId: string, list: Annotation[]) {
-  localStorage.setItem(annotationKey(itemId), JSON.stringify(list));
-}
-
-/* ── Selection toolbar (mini floating button) ───── */
-function SelectionToolbar({ x, y, onNote }: {
-  x: number; y: number; onNote: () => void;
-}) {
-  const clampedX = Math.max(60, Math.min(x, (typeof window !== "undefined" ? window.innerWidth : 800) - 60));
-  if (typeof window === "undefined") return null;
-  return createPortal(
-    <div
-      style={{
-        position: "fixed",
-        top: y - 10,
-        left: clampedX,
-        transform: "translate(-50%, -100%)",
-        zIndex: 600,
-      }}
-      onMouseDown={e => e.stopPropagation()}
-    >
-      {/* Arrow */}
-      <div style={{
-        position: "absolute", bottom: -5, left: "50%", transform: "translateX(-50%)",
-        width: 0, height: 0,
-        borderLeft: "5px solid transparent",
-        borderRight: "5px solid transparent",
-        borderTop: "5px solid #f59e0b",
-      }} />
-      <button
-        onClick={onNote}
-        className="flex items-center gap-1.5 h-7 px-3 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-[12px] font-semibold shadow-lg transition-colors cursor-pointer"
-      >
-        <Bookmark className="w-3 h-3" />
-        Ghi chú
-      </button>
-    </div>,
-    document.body,
-  );
-}
-
-/* ── Annotation floating popup ────────────────────── */
-function AnnotationPopup({ text, x, y, onSave, onClose }: {
-  text: string;
-  x: number;
-  y: number;
-  onSave: (note: string) => void;
-  onClose: () => void;
-}) {
-  const [note, setNote] = useState("");
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50); }, []);
-
-  // Keep popup within viewport bounds
-  const clampedX = Math.max(160, Math.min(x, (typeof window !== "undefined" ? window.innerWidth : 800) - 160));
-
-  if (typeof window === "undefined") return null;
-  return createPortal(
-    <div
-      style={{
-        position: "fixed",
-        top: y - 12,
-        left: clampedX,
-        transform: "translate(-50%, -100%)",
-        zIndex: 600,
-        minWidth: 280,
-      }}
-      onMouseDown={e => e.stopPropagation()}
-    >
-      {/* Arrow */}
-      <div style={{
-        position: "absolute", bottom: -6, left: "50%", transform: "translateX(-50%)",
-        width: 0, height: 0,
-        borderLeft: "6px solid transparent",
-        borderRight: "6px solid transparent",
-        borderTop: "6px solid white",
-        filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.1))",
-      }} className="dark:![border-top-color:#1f1f1f]" />
-      <div className="rounded-[12px] bg-white dark:bg-[#1f1f1f] overflow-hidden"
-        style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.16), 0 1px 4px rgba(0,0,0,0.08)" }}>
-        {/* Header */}
-        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#f0f0f0] dark:border-[#2a2a2a]">
-          <Bookmark className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-[#999] flex-1">Ghi chú</span>
-          <button onClick={onClose}
-            className="flex h-5 w-5 items-center justify-center rounded text-[#bbb] hover:text-[#555] dark:hover:text-[#ccc] transition-colors cursor-pointer">
-            <X className="w-3 h-3" />
-          </button>
-        </div>
-        {/* Quoted selection */}
-        <div className="px-3 pt-2.5">
-          <p className="text-[11px] italic text-[#888] dark:text-[#777] bg-amber-50 dark:bg-amber-950/20 rounded-[6px] px-2 py-1.5 border-l-2 border-amber-400 line-clamp-2">
-            &ldquo;{text}&rdquo;
-          </p>
-        </div>
-        {/* Note input */}
-        <div className="px-3 pt-2 pb-3 space-y-2">
-          <textarea
-            ref={inputRef}
-            placeholder="Nhập ghi chú… (Enter để lưu)"
-            value={note}
-            onChange={e => setNote(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === "Escape") { onClose(); return; }
-              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (note.trim()) onSave(note.trim()); }
-            }}
-            rows={2}
-            className="w-full px-2.5 py-2 text-[12px] rounded-[7px] bg-[#fafafa] dark:bg-[#111] text-[#171717] dark:text-[#f5f5f5] resize-none leading-relaxed"
-            style={{ boxShadow: "var(--shadow-border)" }}
-          />
-          <div className="flex gap-1.5">
-            <button onClick={onClose}
-              className="flex-1 h-7 text-[12px] font-medium text-[#666] dark:text-[#888] rounded-[6px] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-colors cursor-pointer"
-              style={{ boxShadow: "var(--shadow-border)" }}>Hủy</button>
-            <button onClick={() => note.trim() && onSave(note.trim())} disabled={!note.trim()}
-              className="flex-1 h-7 text-[12px] font-medium bg-amber-500 hover:bg-amber-600 text-white rounded-[6px] transition-colors cursor-pointer disabled:opacity-40 flex items-center justify-center gap-1">
-              <Bookmark className="w-3 h-3" />Lưu
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
-/* ── Annotation inline highlight (hover/tap tooltip) ── */
-function AnnotationHighlight({ text, note }: { text: string; note: string }) {
-  const [open, setOpen] = useState(false);
-  return createElement(
-    "mark",
-    {
-      className: "relative bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 rounded-[3px] px-0.5 cursor-help",
-      onMouseEnter: () => setOpen(true),
-      onMouseLeave: () => setOpen(false),
-      onClick: (e: React.MouseEvent) => { e.stopPropagation(); setOpen(v => !v); },
-    },
-    text,
-    open && createElement(
-      "span",
-      {
-        className: "absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 block pointer-events-none",
-        style: { minWidth: 180, maxWidth: 240 },
-      },
-      // Downward arrow
-      createElement("span", {
-        style: {
-          position: "absolute", bottom: -5, left: "50%", transform: "translateX(-50%)",
-          width: 0, height: 0,
-          borderLeft: "5px solid transparent", borderRight: "5px solid transparent",
-          borderTop: "5px solid white",
-        },
-        className: "dark:![border-top-color:#1f1f1f]",
-      }),
-      createElement(
-        "span",
-        {
-          className: "block rounded-[10px] bg-white dark:bg-[#1f1f1f] px-3 py-2.5",
-          style: { boxShadow: "0 4px 24px rgba(0,0,0,0.16)" },
-        },
-        createElement("span", { className: "flex items-center gap-1.5 mb-1.5" },
-          createElement(Bookmark, { className: "w-3 h-3 text-amber-500 shrink-0" }),
-          createElement("span", { className: "text-[10px] font-semibold uppercase tracking-widest text-[#999]" }, "Ghi chú"),
-        ),
-        createElement("span", { className: "text-[12px] text-[#333] dark:text-[#ccc] leading-relaxed block" }, note),
-      ),
-    ),
-  );
-}
-
-// Find the earliest annotation match in a string and return highlighted nodes
-function processTextNode(text: string, anns: Annotation[]): React.ReactNode {
-  if (!anns.length || !text) return text;
-  let earliest: { ann: Annotation; idx: number } | null = null;
-  for (const ann of anns) {
-    const idx = text.indexOf(ann.selectedText);
-    if (idx !== -1 && (!earliest || idx < earliest.idx)) earliest = { ann, idx };
-  }
-  if (!earliest) return text;
-  const { ann, idx } = earliest;
-  const before = text.slice(0, idx);
-  const after  = text.slice(idx + ann.selectedText.length);
-  return createElement(Fragment, {},
-    before,
-    createElement(AnnotationHighlight, { key: ann.id, text: ann.selectedText, note: ann.note }),
-    processTextNode(after, anns),
-  );
-}
-
-// Recursively walk React nodes, injecting highlights into text nodes
-function injectHighlights(node: React.ReactNode, anns: Annotation[]): React.ReactNode {
-  if (!anns.length) return node;
-  if (typeof node === "string") return processTextNode(node, anns);
-  if (Array.isArray(node)) {
-    return (node as React.ReactNode[]).map((child, i) =>
-      createElement(Fragment, { key: i }, injectHighlights(child, anns))
-    );
-  }
-  if (isValidElement(node)) {
-    // Don't process code blocks — preserve exact whitespace/content
-    const t = (node as React.ReactElement).type;
-    if (t === "code" || t === "pre") return node;
-    const el = node as React.ReactElement<{ children?: React.ReactNode }>;
-    if (!el.props?.children) return node;
-    return cloneElement(el, {}, injectHighlights(el.props.children, anns));
-  }
-  return node;
-}
 
 /* ── Detail view ───────────────────────────────────── */
 function DetailView({ item, onBack, onEdit, onDelete }: {
   item: Roadmap; onBack: () => void; onEdit: () => void; onDelete: () => Promise<void>;
 }) {
   const [deleting, setDeleting] = useState(false);
-  const [annotations, setAnnotations] = useState<Annotation[]>(() =>
-    typeof window !== "undefined" ? loadAnnotations(item.id) : []
-  );
-  const [annPanel, setAnnPanel] = useState(false);
-  // selection = position of current text selection; notePopupOpen = full popup is open
-  const [selectionData, setSelectionData] = useState<{ text: string; x: number; y: number } | null>(null);
-  const [notePopupOpen, setNotePopupOpen] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  // Persist annotations whenever they change
-  useEffect(() => { saveAnnotations(item.id, annotations); }, [item.id, annotations]);
-
-  // Deduplicate by selectedText (keep most-recent per unique text for highlight)
-  const uniqueAnns = useMemo(() => {
-    const seen = new Set<string>();
-    return annotations.filter(a => { if (seen.has(a.selectedText)) return false; seen.add(a.selectedText); return true; });
-  }, [annotations]);
-
-  // ReactMarkdown component overrides — inject annotation highlights into text nodes
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mdComponents = useMemo((): Record<string, any> => {
-    if (!uniqueAnns.length) return {};
-    const wrap = (children: React.ReactNode) => injectHighlights(children, uniqueAnns);
-    // Factory: wrap any HTML tag's children with highlight injection (strip `node` prop)
-    const W = (tag: string) => ({ children, node: _node, ...p }: Record<string, unknown>) =>
-      createElement(tag, p, wrap(children as React.ReactNode));
-    return {
-      p: W("p"), li: W("li"),
-      h1: W("h1"), h2: W("h2"), h3: W("h3"), h4: W("h4"), h5: W("h5"), h6: W("h6"),
-      strong: W("strong"), em: W("em"),
-      td: W("td"), th: W("th"), blockquote: W("blockquote"),
-    };
-  }, [uniqueAnns]);
 
   function handleDelete() {
     toast.warning(`Xóa "${item.title}"?`, {
@@ -597,47 +340,8 @@ function DetailView({ item, onBack, onEdit, onDelete }: {
     });
   }
 
-  function handleMouseUp() {
-    // Small delay lets the browser finalise the selection
-    setTimeout(() => {
-      const sel = window.getSelection();
-      if (!sel || sel.isCollapsed) { setSelectionData(null); return; }
-      const text = sel.toString().trim();
-      if (!text) { setSelectionData(null); return; }
-      const range = sel.getRangeAt(0);
-      const rect  = range.getBoundingClientRect();
-      setSelectionData({ text, x: rect.left + rect.width / 2, y: rect.top });
-    }, 10);
-  }
-
-  function dismissAll() {
-    setSelectionData(null);
-    setNotePopupOpen(false);
-    window.getSelection()?.removeAllRanges();
-  }
-
-  function handleSaveAnnotation(note: string) {
-    const ann: Annotation = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      selectedText: selectionData!.text,
-      note,
-      createdAt: new Date().toISOString(),
-    };
-    setAnnotations(prev => [ann, ...prev]);
-    dismissAll();
-    toast.success("Đã lưu ghi chú");
-    setAnnPanel(true);
-  }
-
-  function deleteAnnotation(id: string) {
-    setAnnotations(prev => prev.filter(a => a.id !== id));
-  }
-
-  const annCount = annotations.length;
-
   return (
-    <div className="flex flex-col" style={{ height: "100vh" }}
-      onMouseDown={() => (selectionData || notePopupOpen) && dismissAll()}>
+    <div className="flex flex-col" style={{ height: "100vh" }}>
       {/* Header */}
       <div className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-[#111] shrink-0"
         style={{ boxShadow: "rgba(0,0,0,0.06) 0 1px 0 0" }}>
@@ -653,25 +357,6 @@ function DetailView({ item, onBack, onEdit, onDelete }: {
           <span className="text-[15px] font-semibold text-[#171717] dark:text-[#f5f5f5] truncate">{item.title}</span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Annotation panel toggle */}
-          {item.type === "markdown" && (
-            <Tip label={annPanel ? "Ẩn ghi chú" : `Ghi chú (${annCount})`}>
-              <button onClick={() => setAnnPanel(p => !p)}
-                className={`relative flex h-8 w-8 items-center justify-center rounded-[6px] transition-colors cursor-pointer ${
-                  annPanel
-                    ? "bg-amber-500 text-white"
-                    : "text-[#999] hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20"
-                }`}
-                style={annPanel ? undefined : { boxShadow: "var(--shadow-border)" }}>
-                <StickyNote className="w-3.5 h-3.5" />
-                {annCount > 0 && !annPanel && (
-                  <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 text-white text-[9px] font-bold px-0.5">
-                    {annCount}
-                  </span>
-                )}
-              </button>
-            </Tip>
-          )}
           {item.type === "embed" && (
             <Tip label="Mở tab mới">
               <a href={item.content} target="_blank" rel="noopener noreferrer"
@@ -698,43 +383,12 @@ function DetailView({ item, onBack, onEdit, onDelete }: {
         </div>
       </div>
 
-      {/* Mini note button — shown on text selection, before popup */}
-      {selectionData && !notePopupOpen && (
-        <SelectionToolbar
-          x={selectionData.x}
-          y={selectionData.y}
-          onNote={() => setNotePopupOpen(true)}
-        />
-      )}
-
-      {/* Full annotation popup — shown after clicking the toolbar button */}
-      {selectionData && notePopupOpen && (
-        <AnnotationPopup
-          text={selectionData.text}
-          x={selectionData.x}
-          y={selectionData.y}
-          onSave={handleSaveAnnotation}
-          onClose={dismissAll}
-        />
-      )}
-
-      {/* Body: content + optional annotation panel */}
+      {/* Body */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Main content */}
         {item.type === "embed" ? (
           <iframe src={toEmbedUrl(item.content)} className="flex-1 w-full border-0" title={item.title} allowFullScreen />
         ) : (
-          <div
-            ref={contentRef}
-            className="flex-1 overflow-y-auto"
-            onMouseUp={handleMouseUp}
-            onMouseDown={e => e.stopPropagation()}
-          >
-            {/* Hint bar */}
-            <div className="flex items-center justify-center gap-1.5 pt-3 pb-0 text-[11px] text-[#bbb] select-none">
-              <MessageSquarePlus className="w-3 h-3" />
-              Bôi đen văn bản để ghi chú
-            </div>
+          <div className="flex-1 overflow-y-auto">
             <div className="max-w-3xl mx-auto px-8 py-6
               prose prose-sm dark:prose-invert
               prose-headings:font-semibold prose-headings:text-[#171717] dark:prose-headings:text-[#f5f5f5]
@@ -743,61 +397,8 @@ function DetailView({ item, onBack, onEdit, onDelete }: {
               prose-pre:bg-[#f5f5f5] dark:prose-pre:bg-[#1a1a1a]
               prose-li:text-[#444] dark:prose-li:text-[#bbb]
               prose-strong:text-[#171717] dark:prose-strong:text-[#f5f5f5]">
-              <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{item.content || "_Chưa có nội dung_"}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.content || "_Chưa có nội dung_"}</ReactMarkdown>
             </div>
-          </div>
-        )}
-
-        {/* Annotations panel (right sidebar) */}
-        {annPanel && item.type === "markdown" && (
-          <div className="w-72 shrink-0 flex flex-col bg-[#fafafa] dark:bg-[#0d0d0d] border-l border-[#f0f0f0] dark:border-[#1f1f1f] overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 shrink-0"
-              style={{ boxShadow: "rgba(0,0,0,0.04) 0 1px 0 0" }}>
-              <div className="flex items-center gap-2">
-                <Bookmark className="w-3.5 h-3.5 text-amber-500" />
-                <span className="text-[12px] font-semibold text-[#171717] dark:text-[#f5f5f5]">Ghi chú ({annCount})</span>
-              </div>
-              <Tip label="Ẩn panel">
-                <button onClick={() => setAnnPanel(false)}
-                  className="flex h-6 w-6 items-center justify-center rounded text-[#bbb] hover:text-[#555] dark:hover:text-[#ccc] transition-colors cursor-pointer">
-                  <X className="w-3 h-3" />
-                </button>
-              </Tip>
-            </div>
-
-            {annotations.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center">
-                <MessageSquarePlus className="w-8 h-8 text-[#ddd] dark:text-[#333]" />
-                <p className="text-[12px] text-[#999]">Bôi đen văn bản trong nội dung để thêm ghi chú</p>
-              </div>
-            ) : (
-              <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5">
-                {annotations.map(ann => (
-                  <div key={ann.id} className="group rounded-[8px] bg-white dark:bg-[#111] overflow-hidden"
-                    style={{ boxShadow: "var(--shadow-card)" }}>
-                    <div className="px-3 pt-2.5 pb-1.5 border-l-2 border-amber-400">
-                      <p className="text-[11px] italic text-[#888] dark:text-[#666] line-clamp-2">
-                        &ldquo;{ann.selectedText}&rdquo;
-                      </p>
-                    </div>
-                    <div className="px-3 pb-2.5">
-                      <p className="text-[12px] text-[#333] dark:text-[#ccc] leading-relaxed">{ann.note}</p>
-                    </div>
-                    <div className="flex items-center justify-between px-3 pb-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-[10px] text-[#bbb] tabular-nums">
-                        {new Date(ann.createdAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}
-                      </span>
-                      <Tip label="Xóa ghi chú">
-                        <button onClick={() => deleteAnnotation(ann.id)}
-                          className="flex h-5 w-5 items-center justify-center rounded text-[#bbb] hover:text-red-500 transition-colors cursor-pointer">
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </Tip>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         )}
       </div>
