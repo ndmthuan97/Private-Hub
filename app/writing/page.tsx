@@ -10,6 +10,12 @@ import { Tip } from "@/components/ui/tip";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+/* ── Flag image (Windows doesn't render flag emoji) ──────────── */
+const FLAG_SRC: Record<string, string> = { en: "https://flagcdn.com/24x18/us.png", jp: "https://flagcdn.com/24x18/jp.png" };
+function FlagImg({ lang, size = 18 }: { lang: string; size?: number }) {
+  return <img src={FLAG_SRC[lang] || FLAG_SRC.en} alt="" width={size} height={Math.round(size * 0.75)} className="inline-block" style={{ verticalAlign: "middle" }} />;
+}
+
 /* ── Types ──────────────────────────────────────────────────── */
 type Language = "en" | "jp";
 type Step = "language" | "topic" | "write" | "review";
@@ -233,17 +239,16 @@ export default function WritingPage() {
           <h1 className="text-[22px] font-semibold text-[#171717] dark:text-[#f5f5f5]">Chọn ngôn ngữ</h1>
           <p className="text-[13px] text-[#999]">Bạn muốn luyện viết ngôn ngữ nào hôm nay?</p>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex justify-center gap-3">
           {([
-            { lang: "en" as Language, flag: "🇺🇸", name: "English",  sub: "Tiếng Anh" },
-            { lang: "jp" as Language, flag: "🇯🇵", name: "日本語",    sub: "Tiếng Nhật" },
+            { lang: "en" as Language, name: "English" },
+            { lang: "jp" as Language, name: "日本語" },
           ]).map(item => (
             <button key={item.lang} onClick={() => selectLanguage(item.lang)}
-              className="flex flex-col items-center gap-2 py-7 px-4 rounded-[12px] bg-white dark:bg-[#111] hover:ring-2 hover:ring-[hsl(24,95%,53%)] transition-all duration-150 cursor-pointer group"
+              className="flex items-center gap-2.5 py-3 px-6 rounded-[10px] bg-white dark:bg-[#111] hover:ring-2 hover:ring-[hsl(24,95%,53%)] transition-all duration-150 cursor-pointer group"
               style={{ boxShadow: "var(--shadow-card)" }}>
-              <span className="text-[40px]">{item.flag}</span>
-              <span className="text-[16px] font-semibold text-[#171717] dark:text-[#f5f5f5] group-hover:text-[hsl(24,95%,53%)] transition-colors">{item.name}</span>
-              <span className="text-[12px] text-[#999]">{item.sub}</span>
+              <FlagImg lang={item.lang} size={22} />
+              <span className="text-[14px] font-semibold text-[#171717] dark:text-[#f5f5f5] group-hover:text-[hsl(24,95%,53%)] transition-colors">{item.name}</span>
             </button>
           ))}
         </div>
@@ -258,7 +263,7 @@ export default function WritingPage() {
     <div className="flex flex-col h-screen">
       <TopBar
         onBack={() => setStep("language")}
-        right={<span className="text-[13px] font-medium text-[#999]">{language === "en" ? "🇺🇸 English" : "🇯🇵 日本語"}</span>}
+        right={<span className="text-[13px] font-medium text-[#999] inline-flex items-center gap-1.5"><FlagImg lang={language} size={16} /> {language === "en" ? "English" : "日本語"}</span>}
       />
       <div className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-lg space-y-4">
