@@ -26,7 +26,7 @@ export const budgetEntries = pgTable("budget_entries", {
   month:       integer("month").notNull(),    // 1–12
   year:        integer("year").notNull(),
   totalAmount: numeric("total_amount", { precision: 15, scale: 2 }).notNull(),
-  // [{key, label, emoji, color, percentage, amount, spent?}]
+  // [{key, label, emoji, color, percentage, amount}]
   allocations: jsonb("allocations").notNull().default([]),
   // History of each income deposit added to this month: [{amount, note, createdAt}]
   deposits:    jsonb("deposits").notNull().default([]),

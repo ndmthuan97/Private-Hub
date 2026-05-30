@@ -2,28 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft, Menu } from "lucide-react";
-
-/* Route → title mapping for mobile header */
-const TITLE_MAP: Record<string, string> = {
-  "/":             "Dashboard",
-  "/conversation": "Luyện Giao Tiếp",
-  "/vocab":        "Từ Vựng",
-  "/dictation":    "Daily Dictation",
-  "/writing":      "Luyện Viết",
-  "/translation":  "Luyện Dịch",
-  "/budget":       "Ngân Sách",
-  "/strategy":     "Strategy",
-  "/calendar":     "Calendar",
-  "/notebooklm":   "NotebookLM",
-  "/settings":     "Cài đặt",
-  "/embed":        "Xem trang",
-};
-
-/* Routes where child pages should show a back button */
-const PARENT_MAP: Record<string, string> = {
-  "/vocab": "/vocab",
-  "/strategy": "/strategy",
-};
+import { TITLE_MAP, PARENT_MAP } from "@/lib/nav-items";
 
 /**
  * Mobile-only sticky header — shows page title + menu trigger.

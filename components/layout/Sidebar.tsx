@@ -2,15 +2,16 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  MessageCircle, Wallet, LayoutDashboard, LogOut, Map, Globe,
-  CalendarDays, BookOpen, BookA, ChevronLeft, ChevronRight, Headphones, PenLine, Languages,
+  LogOut, Globe, ChevronLeft, ChevronRight,
   Code, Music, Video, Image, FileText, Database, Cloud, ShoppingBag, Gamepad2,
   GraduationCap, Heart, Star, Rocket, Zap, Coffee, Briefcase, Palette, Newspaper,
-  Link as LinkIcon, Camera, Mail, Calculator, Shield, Terminal, Search, Home, Settings,
-  Users, TrendingUp, BarChart3, Wrench, Cpu, Smartphone, Monitor, Wifi, Lock,
+  Link as LinkIcon, BookOpen, Camera, MessageCircle, Mail, Map, Calculator, Headphones,
+  Shield, Terminal, Search, Home, Settings, Users, TrendingUp, BarChart3, Wrench, Cpu,
+  Smartphone, Monitor, Wifi, Lock,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NAV_GROUPS } from "@/lib/nav-items";
 import { useState, useEffect, useCallback } from "react";
 
 /* ─── Icon map ──────────────────────────────────────────────────── */
@@ -22,41 +23,10 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Smartphone, Monitor, Wifi, Lock,
 };
 
-/* ─── Types ─────────────────────────────────────────────────────── */
-type NavItem = { href: string; label: string; icon: LucideIcon; color: string };
-type NavGroup = { label?: string; items: NavItem[] };
 type ExternalItem = { href: string; label: string; color: string; icon: string; groupId?: string };
 type CustomGroup = { id: string; label: string };
 type GroupOverride = { customLabel?: string; hidden?: boolean };
 type GroupOverrides = Record<string, GroupOverride>;
-
-/* ─── Constants ─────────────────────────────────────────────────── */
-const NAV_GROUPS: NavGroup[] = [
-  { items: [{ href: "/", label: "Dashboard", icon: LayoutDashboard, color: "#666" }] },
-  { label: "Học tập", items: [
-    { href: "/conversation", label: "Luyện Giao Tiếp", icon: MessageCircle, color: "hsl(160,84%,42%)" },
-    { href: "/vocab",        label: "Từ Vựng",         icon: BookA,         color: "hsl(239,84%,67%)" },
-    { href: "/dictation",    label: "Daily Dictation",  icon: Headphones,    color: "hsl(160,84%,42%)" },
-    { href: "/writing",      label: "Luyện Viết",       icon: PenLine,       color: "hsl(24,95%,53%)" },
-    { href: "/translation",  label: "Luyện Dịch",       icon: Languages,     color: "hsl(24,95%,53%)" },
-  ]},
-  { label: "Quản lý", items: [
-    { href: "/budget",   label: "Ngân Sách", icon: Wallet,      color: "hsl(38,92%,52%)" },
-    { href: "/strategy",  label: "Strategy",  icon: Map,         color: "hsl(262,83%,58%)" },
-    { href: "/calendar",  label: "Calendar",  icon: CalendarDays, color: "hsl(217,91%,60%)" },
-  ]},
-  { label: "Công cụ", items: [
-    { href: "/notebooklm", label: "NotebookLM", icon: BookOpen, color: "hsl(217,91%,60%)" },
-    { href: "/trending",   label: "Trending",   icon: TrendingUp, color: "hsl(340,75%,55%)" },
-  ]},
-];
-
-// Page title map for mobile top bar
-const TITLE_MAP: Record<string, string> = Object.fromEntries(
-  NAV_GROUPS.flatMap(g => g.items.map(i => [i.href, i.label]))
-);
-TITLE_MAP["/settings"] = "Cài đặt";
-TITLE_MAP["/embed"] = "Xem trang";
 
 const BUILTIN_PREFIX = "__builtin:";
 
@@ -68,7 +38,6 @@ function resolveIcon(iconName?: string): LucideIcon {
 export function Sidebar() {
   const pathname = usePathname();
   const router   = useRouter();
-  const [theme, setTheme]       = useState<"dark" | "light">("light");
   const [expanded, setExpanded] = useState(true);
   const [customs, setCustoms]   = useState<ExternalItem[]>([]);
   const [groups, setGroups]     = useState<CustomGroup[]>([]);
@@ -91,15 +60,8 @@ export function Sidebar() {
 
   /* ── Init ──────────────────────────────────────────────────────── */
   useEffect(() => {
-    // Theme from localStorage (UI preference, stays client-side)
-    const saved = localStorage.getItem("ph_theme") as "dark" | "light" | null;
-    const system = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    const t = saved ?? system;
-    setTheme(t);
-    document.documentElement.setAttribute("data-theme", t);
     const savedSidebar = localStorage.getItem("ph_sidebar");
     if (savedSidebar !== null) setExpanded(savedSidebar === "1");
-    // Sidebar config from DB
     fetchConfig();
   }, [fetchConfig]);
 

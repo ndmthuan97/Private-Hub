@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { ok } from "@/lib/api-response";
 import { getGroqClient, GROQ_MODEL } from "@/lib/groq";
 
 // Curated set of Lucide icons available in the sidebar
@@ -17,10 +18,7 @@ export async function POST(req: NextRequest) {
   try {
     const { url, label } = await req.json();
     if (!url && !label) {
-      return NextResponse.json({
-        statusCode: 400, message: "Missing url or label",
-        data: { icon: "Globe" }, errors: null,
-      });
+      return ok({ icon: "Globe" });
     }
 
     const groq = getGroqClient();
@@ -44,14 +42,8 @@ export async function POST(req: NextRequest) {
     // Validate the response is in our list
     const icon = AVAILABLE_ICONS.includes(raw) ? raw : "Globe";
 
-    return NextResponse.json({
-      statusCode: 200, message: "OK",
-      data: { icon }, errors: null,
-    });
+    return ok({ icon });
   } catch {
-    return NextResponse.json({
-      statusCode: 200, message: "Fallback",
-      data: { icon: "Globe" }, errors: null,
-    });
+    return ok({ icon: "Globe" }, "Fallback");
   }
 }

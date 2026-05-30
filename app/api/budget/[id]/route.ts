@@ -1,10 +1,10 @@
-// app/api/budget/[id]/route.ts — PUT update + DELETE
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { ok, notFound, serverError } from "@/lib/api-response";
 import { getDb } from "@/db";
 import { budgetEntries, budgetCategories } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-// PUT /api/budget/[id] — update totalAmount OR spent amounts per category
+// PUT /api/budget/[id] — update totalAmount
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -14,7 +14,6 @@ export async function PUT(
     const body = await req.json() as {
       totalAmount?: number;
       note?: string;
-      spentAmounts?: Record<string, number>; // { key: spent }
     };
     const db = getDb();
 
@@ -31,20 +30,7 @@ export async function PUT(
         color:      c.color,
         percentage: parseFloat(String(c.percentage)),
         amount:     Math.round((body.totalAmount! * parseFloat(String(c.percentage))) / 100),
-        spent:      0,
       }));
-    }
-
-    if (body.spentAmounts !== undefined) {
-      // Fetch current entry, merge spent values
-      const [current] = await db.select().from(budgetEntries).where(eq(budgetEntries.id, id)).limit(1);
-      if (current) {
-        const allocs = (current.allocations as Array<Record<string, unknown>>).map(a => ({
-          ...a,
-          spent: body.spentAmounts![a.key as string] ?? (a.spent ?? 0),
-        }));
-        updates.allocations = allocs;
-      }
     }
 
     const [updated] = await db
@@ -54,13 +40,12 @@ export async function PUT(
       .returning();
 
     if (!updated) {
-      return NextResponse.json({ statusCode: 404, message: "Không tìm thấy", data: null, errors: null }, { status: 404 });
+      return notFound("Không tìm thấy");
     }
 
-    return NextResponse.json({ statusCode: 200, message: "Đã cập nhật", data: { entry: updated }, errors: null });
+    return ok({ entry: updated }, "Đã cập nhật");
   } catch (err) {
-    console.error("[budget/[id] PUT]", err);
-    return NextResponse.json({ statusCode: 500, message: "Server error", data: null, errors: null }, { status: 500 });
+    return serverError("Server error", err);
   }
 }
 
@@ -78,12 +63,11 @@ export async function DELETE(
       .returning({ id: budgetEntries.id });
 
     if (!deleted) {
-      return NextResponse.json({ statusCode: 404, message: "Không tìm thấy", data: null, errors: null }, { status: 404 });
+      return notFound("Không tìm thấy");
     }
 
-    return NextResponse.json({ statusCode: 200, message: "Đã xóa", data: { id: deleted.id }, errors: null });
+    return ok({ id: deleted.id }, "Đã xóa");
   } catch (err) {
-    console.error("[budget/[id] DELETE]", err);
-    return NextResponse.json({ statusCode: 500, message: "Server error", data: null, errors: null }, { status: 500 });
+    return serverError("Server error", err);
   }
 }

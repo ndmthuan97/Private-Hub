@@ -1,19 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { ok, serverError } from "@/lib/api-response";
 import { getDb, sidebarConfig } from "@/db";
 import { eq } from "drizzle-orm";
 
 const CONFIG_ID = "default";
-
-type ApiRes<T = unknown> = {
-  statusCode: number;
-  message: string;
-  data: T | null;
-  errors: unknown | null;
-};
-
-function json<T>(body: ApiRes<T>, status = 200) {
-  return NextResponse.json(body, { status });
-}
 
 // GET /api/sidebar — return sidebar config
 export async function GET() {
@@ -27,22 +17,14 @@ export async function GET() {
 
     const row = rows[0] ?? { links: [], groups: [], hidden: [], overrides: {} };
 
-    return json({
-      statusCode: 200,
-      message: "OK",
-      data: {
-        links: row.links as unknown[],
-        groups: row.groups as unknown[],
-        hidden: row.hidden as unknown[],
-        overrides: row.overrides as Record<string, unknown>,
-      },
-      errors: null,
+    return ok({
+      links: row.links as unknown[],
+      groups: row.groups as unknown[],
+      hidden: row.hidden as unknown[],
+      overrides: row.overrides as Record<string, unknown>,
     });
   } catch (e) {
-    return json(
-      { statusCode: 500, message: "Failed to load sidebar config", data: null, errors: String(e) },
-      500
-    );
+    return serverError("Failed to load sidebar config", e);
   }
 }
 
@@ -75,16 +57,8 @@ export async function PUT(req: NextRequest) {
         set: updates,
       });
 
-    return json({
-      statusCode: 200,
-      message: "Sidebar config updated",
-      data: { links, groups, hidden, overrides },
-      errors: null,
-    });
+    return ok({ links, groups, hidden, overrides }, "Sidebar config updated");
   } catch (e) {
-    return json(
-      { statusCode: 500, message: "Failed to update sidebar config", data: null, errors: String(e) },
-      500
-    );
+    return serverError("Failed to update sidebar config", e);
   }
 }

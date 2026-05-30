@@ -2,16 +2,19 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  MessageCircle, Wallet, BookA, Headphones, PenLine, Languages,
-  Map, CalendarDays, BookOpen, Settings, BookCheck,
-  FileText, ArrowUpRight, ChevronDown, TrendingUp, Star,
+  BookCheck, FileText, ArrowUpRight, ChevronDown, TrendingUp, Star,
+  Wallet, BookOpen,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn, formatVNDShort } from "@/lib/utils";
+import { ALL_MENU_ITEMS } from "@/lib/nav-items";
+import { HexChart } from "@/app/budget/DetailDialog";
+import type { Allocation } from "@/app/budget/DetailDialog";
 
 /* ─── Types ───────────────────────────────────────────────────── */
 type MonthEntry = {
-  month: number; total: number; spent: number; remaining: number;
+  month: number; total: number;
   allocations: Alloc[];
 };
 
@@ -20,21 +23,16 @@ type DashboardData = {
   budget: {
     currentMonth: number; currentYear: number; selectedYear: number;
     availableYears: number[];
-    currentMonthTotal: number; currentMonthSpent: number; currentMonthRemaining: number;
+    currentMonthTotal: number;
     months: MonthEntry[];
   };
   strategy:   { totalItems: number };
   notebooklm: { totalPrompts: number };
 };
 
-type Alloc = { key: string; label: string; emoji: string; color: string; percentage: number; amount: number; spent?: number };
+type Alloc = { key: string; label: string; emoji: string; color: string; percentage: number; amount: number };
 
-/* ─── Helpers ──────────────────────────────────────────────────── */
-function formatVND(n: number) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-  return n.toLocaleString("vi-VN");
-}
+
 
 const MONTH_LABELS = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -47,21 +45,8 @@ const MONTH_COLORS = [
   "hsl(260,70%,60%)", "hsl(285,60%,55%)", "hsl(320,65%,52%)",
 ];
 
-/* ─── Shortcuts ─────────────────────────────────────────────────── */
-const SHORTCUTS = [
-  { href: "/conversation", label: "Giao Tiếp",  icon: MessageCircle, color: "hsl(160,84%,42%)" },
-  { href: "/vocab",        label: "Từ Vựng",     icon: BookA,         color: "hsl(239,84%,67%)" },
-  { href: "/dictation",    label: "Dictation",   icon: Headphones,    color: "hsl(160,84%,42%)" },
-  { href: "/writing",      label: "Luyện Viết",  icon: PenLine,       color: "hsl(24,95%,53%)" },
-  { href: "/translation",  label: "Luyện Dịch",  icon: Languages,     color: "hsl(24,95%,53%)" },
-  { href: "/budget",       label: "Ngân Sách",   icon: Wallet,        color: "hsl(38,92%,52%)" },
-  { href: "/strategy",     label: "Strategy",    icon: Map,           color: "hsl(262,83%,58%)" },
-  { href: "/calendar",     label: "Calendar",    icon: CalendarDays,  color: "hsl(217,91%,60%)" },
-  { href: "/notebooklm",   label: "NotebookLM",  icon: BookOpen,      color: "hsl(217,91%,60%)" },
-  { href: "/settings",     label: "Cài đặt",     icon: Settings,      color: "#888" },
-];
+const SHORTCUTS = ALL_MENU_ITEMS.filter(i => i.href !== "/");
 
-const CALENDAR_EMBED = "https://calendar.google.com/calendar/embed?src=ndmthuan.97%40gmail.com&ctz=Asia%2FHo_Chi_Minh&mode=AGENDA&showTitle=0&showNav=0&showTabs=0&showCalendars=0&showPrint=0";
 
 /* ─── Dashboard Page ────────────────────────────────────────────── */
 export default function DashboardPage() {
@@ -100,8 +85,8 @@ export default function DashboardPage() {
           icon={Wallet}
           iconColor="hsl(38,92%,52%)"
           label={data ? `${MONTH_LABELS[data.budget.currentMonth]}/${data.budget.currentYear}` : "Ngân sách"}
-          value={data ? formatVND(data.budget.currentMonthRemaining) : "—"}
-          sub={data && data.budget.currentMonthTotal > 0 ? `Đã chi ${formatVND(data.budget.currentMonthSpent)}` : "Chưa nạp"}
+          value={data ? formatVNDShort(data.budget.currentMonthTotal) : "—"}
+          sub={data && data.budget.currentMonthTotal > 0 ? "Tổng phân bổ" : "Chưa nạp"}
           href="/budget"
         />
         <StatCard
@@ -133,7 +118,7 @@ export default function DashboardPage() {
 
 /* ─── Stat Card ───────────────────────────────────────────────── */
 function StatCard({ icon: Icon, iconColor, label, value, sub, href }: {
-  icon: typeof BookA; iconColor: string; label: string; value: string; sub: string; href: string;
+  icon: LucideIcon; iconColor: string; label: string; value: string; sub: string; href: string;
 }) {
   return (
     <Link href={href}
@@ -206,7 +191,7 @@ function BudgetWidget({ data, budgetYear, onYearChange }: {
           <span className="text-[10px] md:text-[11px] font-medium text-[#999] dark:text-[#666] leading-none text-right">0</span>
           {gridLines.map(g => (
             <span key={g.pct} className="text-[10px] md:text-[11px] font-medium text-[#999] dark:text-[#666] leading-none text-right">
-              {formatVND(g.value)}
+              {formatVNDShort(g.value)}
             </span>
           ))}
         </div>
@@ -228,7 +213,6 @@ function BudgetWidget({ data, budgetYear, onYearChange }: {
             {Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
               const entry = data?.budget.months.find(e => e.month === m);
               const total = entry?.total ?? 0;
-              const spent = entry?.spent ?? 0;
               const barH = total > 0 ? Math.max(4, (total / maxTotal) * 100) : 0;
               const isActive = m === selectedMonth;
               const color = MONTH_COLORS[m];
@@ -248,7 +232,7 @@ function BudgetWidget({ data, budgetYear, onYearChange }: {
                       className="absolute text-[9px] font-semibold text-[#171717] dark:text-[#f5f5f5] whitespace-nowrap z-20"
                       style={{ bottom: `${barH + 2}%` }}
                     >
-                      {formatVND(total)}
+                      {formatVNDShort(total)}
                     </span>
                   )}
 
@@ -264,16 +248,10 @@ function BudgetWidget({ data, budgetYear, onYearChange }: {
                         background: color,
                         transform: isActive ? "scaleX(1.08)" : undefined,
                       }}
-                    >
-                      {spent > 0 && (
-                        <div
-                          className="absolute bottom-0 left-0 right-0 bg-black/20"
-                          style={{ height: `${(spent / total) * 100}%` }}
-                        />
-                      )}
-                    </div>
+                    />
                   </div>
                 </button>
+
               );
             })}
           </div>
@@ -304,53 +282,35 @@ function BudgetWidget({ data, budgetYear, onYearChange }: {
 
       {/* Dialog for month detail */}
       {activeEntry && activeEntry.allocations.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedMonth(null)}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setSelectedMonth(null)}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div
-            className="relative bg-white dark:bg-[#1a1a1a] rounded-[14px] w-full max-w-md p-5 shadow-2xl"
+            className="relative w-full sm:max-w-md rounded-t-[16px] sm:rounded-[12px] bg-white dark:bg-[#111] overflow-hidden"
+            style={{ boxShadow: "var(--shadow-card)", maxHeight: "90vh", overflowY: "auto" }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Close button */}
-            <button
-              onClick={() => setSelectedMonth(null)}
-              className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[#f0f0f0] dark:bg-[#333] flex items-center justify-center text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
-            >
-              ✕
-            </button>
-
             {/* Header */}
-            <div className="mb-4">
-              <h3 className="text-[14px] font-bold text-[#171717] dark:text-[#f5f5f5]">
-                {MONTH_LABELS[activeEntry.month]} — {formatVND(activeEntry.total)}
-              </h3>
-              <p className="text-[11px] text-[#999] mt-0.5">
-                Đã chi {formatVND(activeEntry.spent)} · Còn {formatVND(activeEntry.remaining)}
-              </p>
+            <div className="flex items-center justify-between px-5 py-3"
+              style={{ boxShadow: "rgba(0,0,0,0.06) 0px 1px 0px 0px" }}>
+              <div>
+                <p className="text-[16px] font-semibold text-[#171717] dark:text-[#f5f5f5]">
+                  {MONTH_LABELS[activeEntry.month]} — {formatVNDShort(activeEntry.total)}
+                </p>
+                <p className="text-[11px] text-[#999] mt-0.5">
+                  Tổng phân bổ tháng
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedMonth(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
+                style={{ boxShadow: "var(--shadow-border)" }}
+              >
+                ✕
+              </button>
             </div>
-
-            {/* Allocations */}
-            <div className="space-y-3">
-              {activeEntry.allocations.map((a) => {
-                const pct = a.amount > 0 ? Math.min(100, ((Number(a.spent) || 0) / a.amount) * 100) : 0;
-                return (
-                  <div key={a.key}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[12px] font-medium text-[#333] dark:text-[#ccc]">
-                        {a.emoji} {a.label}
-                      </span>
-                      <span className="text-[11px] text-[#999]">
-                        {formatVND(Number(a.spent) || 0)} / {formatVND(a.amount)}
-                      </span>
-                    </div>
-                    <div className="h-2 rounded-full bg-[#f0f0f0] dark:bg-[#2a2a2a] overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%`, background: a.color }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+            {/* HexChart */}
+            <div className="flex items-center justify-center p-2">
+              <HexChart allocs={activeEntry.allocations as Allocation[]} />
             </div>
           </div>
         </div>

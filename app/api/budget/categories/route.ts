@@ -1,5 +1,5 @@
-// app/api/budget/categories/route.ts — GET + PUT category percentages
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { ok, created, unprocessable, serverError } from "@/lib/api-response";
 import { getDb } from "@/db";
 import { budgetCategories } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -24,10 +24,9 @@ export async function GET() {
       rows = await db.insert(budgetCategories).values(DEFAULT_CATEGORIES).returning();
     }
 
-    return NextResponse.json({ statusCode: 200, message: "OK", data: { categories: rows }, errors: null });
+    return ok({ categories: rows });
   } catch (err) {
-    console.error("[budget/categories GET]", err);
-    return NextResponse.json({ statusCode: 500, message: "Server error", data: null, errors: null }, { status: 500 });
+    return serverError("Server error", err);
   }
 }
 
@@ -36,22 +35,21 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as { label: string; emoji: string; color: string; percentage: number };
     if (!body.label?.trim()) {
-      return NextResponse.json({ statusCode: 422, message: "Thiếu tên hạng mục", data: null, errors: null }, { status: 422 });
+      return unprocessable("Thiếu tên hạng mục");
     }
     const db  = getDb();
     const all = await db.select({ so: budgetCategories.sortOrder }).from(budgetCategories).orderBy(budgetCategories.sortOrder);
     const maxOrder = all.length ? Math.max(...all.map(r => r.so)) + 1 : 0;
     const key = body.label.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "") + "_" + Date.now();
-    const [created] = await db.insert(budgetCategories).values({
+    const [row] = await db.insert(budgetCategories).values({
       key, label: body.label.trim(), emoji: body.emoji || "💡",
       color: body.color || "#6366f1",
       percentage: String(body.percentage ?? 0),
       sortOrder: maxOrder,
     }).returning();
-    return NextResponse.json({ statusCode: 201, message: "Đã tạo hạng mục", data: { category: created }, errors: null }, { status: 201 });
+    return created({ category: row }, "Đã tạo hạng mục");
   } catch (err) {
-    console.error("[budget/categories POST]", err);
-    return NextResponse.json({ statusCode: 500, message: "Server error", data: null, errors: null }, { status: 500 });
+    return serverError("Server error", err);
   }
 }
 
@@ -62,10 +60,7 @@ export async function PUT(req: NextRequest) {
     const body = await req.json() as { id: string; label?: string; emoji?: string; color?: string; percentage: number }[];
     const total = body.reduce((s, c) => s + c.percentage, 0);
     if (Math.abs(total - 100) > 0.01) {
-      return NextResponse.json(
-        { statusCode: 422, message: `Tổng tỷ lệ phải bằng 100% (hiện: ${total.toFixed(2)}%)`, data: null, errors: null },
-        { status: 422 }
-      );
+      return unprocessable(`Tổng tỷ lệ phải bằng 100% (hiện: ${total.toFixed(2)}%)`);
     }
     const db = getDb();
     const updated = await Promise.all(
@@ -77,9 +72,8 @@ export async function PUT(req: NextRequest) {
         return db.update(budgetCategories).set(set).where(eq(budgetCategories.id, c.id)).returning().then(r => r[0]);
       })
     );
-    return NextResponse.json({ statusCode: 200, message: "Đã cập nhật", data: { categories: updated }, errors: null });
+    return ok({ categories: updated }, "Đã cập nhật");
   } catch (err) {
-    console.error("[budget/categories PUT]", err);
-    return NextResponse.json({ statusCode: 500, message: "Server error", data: null, errors: null }, { status: 500 });
+    return serverError("Server error", err);
   }
 }

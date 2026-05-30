@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { created, badRequest } from "@/lib/api-response";
 import { getDb, roadmaps } from "@/db";
 
 // POST /api/strategy/items — create a new strategy item from UI (no CRON_SECRET needed)
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
   };
 
   if (!title?.trim()) {
-    return NextResponse.json({ statusCode: 400, message: "Thiếu tiêu đề", data: null, errors: null }, { status: 400 });
+    return badRequest("Thiếu tiêu đề");
   }
 
   const db = getDb();
@@ -22,5 +23,5 @@ export async function POST(req: NextRequest) {
     folderId: folderId ?? null,
   }).returning();
 
-  return NextResponse.json({ statusCode: 201, message: "Created", data: row, errors: null }, { status: 201 });
+  return created(row);
 }

@@ -1,5 +1,5 @@
-// app/api/conversation/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { ok, badRequest, serverError } from "@/lib/api-response";
 import { getGroqClient, GROQ_MODEL } from "@/lib/groq";
 
 type Language = "en" | "jp";
@@ -72,12 +72,7 @@ export async function POST(req: NextRequest) {
 
     // Allow empty messages array — AI will initiate the conversation
     if (!Array.isArray(messages) || !language || !persona || !scenario) {
-      return NextResponse.json({
-        statusCode: 400,
-        message: "Missing required fields: language, persona, scenario",
-        data: null,
-        errors: null,
-      }, { status: 400 });
+      return badRequest("Missing required fields: language, persona, scenario");
     }
 
     const groq = getGroqClient();
@@ -95,19 +90,8 @@ export async function POST(req: NextRequest) {
 
     const reply = completion.choices[0]?.message?.content ?? "";
 
-    return NextResponse.json({
-      statusCode: 200,
-      message: "OK",
-      data: { reply },
-      errors: null,
-    });
+    return ok({ reply });
   } catch (err) {
-    console.error("[conversation/route] error:", err);
-    return NextResponse.json({
-      statusCode: 500,
-      message: "Internal server error",
-      data: null,
-      errors: null,
-    }, { status: 500 });
+    return serverError("Internal server error", err);
   }
 }

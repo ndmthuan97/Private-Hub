@@ -2,30 +2,9 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Sun, Moon, Lock } from "lucide-react";
+import { useTheme } from "@/lib/theme";
 
-// ─── Theme toggle (persisted in localStorage) ─────────────────
-function useTheme() {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
 
-  useEffect(() => {
-    const saved = localStorage.getItem("ph_theme") as "dark" | "light" | null;
-    const system = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
-    const initial = saved ?? system;
-    setTheme(initial);
-    document.documentElement.setAttribute("data-theme", initial);
-  }, []);
-
-  function toggle() {
-    setTheme((t) => {
-      const next = t === "dark" ? "light" : "dark";
-      localStorage.setItem("ph_theme", next);
-      document.documentElement.setAttribute("data-theme", next);
-      return next;
-    });
-  }
-
-  return { theme, toggle };
-}
 
 // ─── Animated background dots ─────────────────────────────────
 function GridBackground() {

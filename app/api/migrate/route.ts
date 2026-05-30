@@ -8,6 +8,7 @@
 // - Session pooler (port 5432) hỗ trợ DDL (CREATE TABLE, ALTER, ...)
 
 import { NextRequest, NextResponse } from "next/server";
+import { ok, unauthorized, serverError } from "@/lib/api-response";
 import postgres from "postgres";
 import fs from "fs";
 import path from "path";
@@ -23,19 +24,13 @@ const MIGRATIONS_DIR = path.join(process.cwd(), "drizzle");
 
 export async function GET(req: NextRequest) {
   if (!isAuthorized(req)) {
-    return NextResponse.json(
-      { statusCode: 401, message: "Unauthorized", data: null, errors: null },
-      { status: 401 }
-    );
+    return unauthorized();
   }
 
   // Dùng session pooler (port 5432) — hỗ trợ DDL, hoạt động từ Vercel
   const url = process.env.DATABASE_URL;
   if (!url) {
-    return NextResponse.json(
-      { statusCode: 500, message: "DATABASE_URL not configured", data: null, errors: null },
-      { status: 500 }
-    );
+    return serverError("DATABASE_URL not configured");
   }
 
   const applied: string[] = [];
@@ -84,26 +79,12 @@ export async function GET(req: NextRequest) {
       applied.push(file);
     }
 
-    return NextResponse.json({
-      statusCode: 200,
-      message: applied.length > 0
-        ? `Applied ${applied.length} migration(s)`
-        : "Already up to date",
-      data: { applied, skipped },
-      errors: null,
-    });
+    return ok({ applied, skipped }, applied.length > 0
+      ? `Applied ${applied.length} migration(s)`
+      : "Already up to date");
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("[migrate] error:", msg);
-    return NextResponse.json(
-      {
-        statusCode: 500,
-        message: "Migration failed",
-        data: { applied, skipped },
-        errors: { detail: msg },
-      },
-      { status: 500 }
-    );
+    return serverError("Migration failed", err);
   } finally {
     await sql?.end();
   }

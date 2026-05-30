@@ -36,24 +36,18 @@ export async function GET(req: NextRequest) {
     // Build monthly summary for the year
     const months = budgetYearData.map(entry => {
       const total = parseFloat(String(entry.totalAmount))
-      const allocs = entry.allocations as Array<{ spent?: number }>
-      const spent = allocs.reduce((sum, a) => sum + (Number(a.spent) || 0), 0)
       return {
         month: entry.month,
         total,
-        spent,
-        remaining: total - spent,
         allocations: entry.allocations as Array<Record<string, unknown>>,
       }
     })
 
     // Current month data for the stat card
     const currentEntry = budgetYearData.find(e => e.month === currentMonth && budgetYear === currentYear)
-    let currentTotal = 0, currentSpent = 0
+    let currentTotal = 0
     if (currentEntry) {
       currentTotal = parseFloat(String(currentEntry.totalAmount))
-      const allocs = currentEntry.allocations as Array<{ spent?: number }>
-      currentSpent = allocs.reduce((sum, a) => sum + (Number(a.spent) || 0), 0)
     }
 
     // Distinct years that have budget data (for year selector)
@@ -77,8 +71,6 @@ export async function GET(req: NextRequest) {
         selectedYear: budgetYear,
         availableYears,
         currentMonthTotal:     currentTotal,
-        currentMonthSpent:     currentSpent,
-        currentMonthRemaining: currentTotal - currentSpent,
         months,
       },
       strategy: {

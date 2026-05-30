@@ -2,30 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import {
-  MessageCircle, BookA, Headphones, PenLine, Languages,
-  Wallet, Map, CalendarDays, BookOpen, Settings,
-  LayoutDashboard, X,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-/* ─── All menu items flat ────────────────────────────────────── */
-type MenuItem = { icon: LucideIcon; label: string; href: string };
-
-const ALL_ITEMS: MenuItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard",  href: "/" },
-  { icon: MessageCircle,   label: "Giao Tiếp",  href: "/conversation" },
-  { icon: BookA,           label: "Từ Vựng",     href: "/vocab" },
-  { icon: Headphones,      label: "Dictation",   href: "/dictation" },
-  { icon: PenLine,         label: "Luyện Viết",  href: "/writing" },
-  { icon: Languages,       label: "Luyện Dịch",  href: "/translation" },
-  { icon: Wallet,          label: "Ngân Sách",   href: "/budget" },
-  { icon: Map,             label: "Strategy",    href: "/strategy" },
-  { icon: CalendarDays,    label: "Calendar",    href: "/calendar" },
-  { icon: BookOpen,        label: "NotebookLM",  href: "/notebooklm" },
-  { icon: Settings,        label: "Cài đặt",     href: "/settings" },
-];
+import { ALL_MENU_ITEMS } from "@/lib/nav-items";
 
 type GridSize = 3 | 4 | 5;
 const CELL_SIZE = 68;
@@ -111,7 +90,7 @@ export function FloatingMenu() {
             width: popupWidth,
           }}
         >
-          {ALL_ITEMS.map((item) => {
+          {ALL_MENU_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = item.href === pathname;
             return (

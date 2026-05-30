@@ -8,7 +8,7 @@ import { Tip } from "@/components/ui/tip";
 
 export interface Allocation {
   key: string; label: string; emoji: string; color: string;
-  percentage: number; amount: number; spent?: number;
+  percentage: number; amount: number;
 }
 export interface Entry {
   id: string; month: number; year: number;
@@ -22,7 +22,7 @@ const MONTHS = ["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6
 /* ── SVG Cycle Arrow Chart ── */
 // Segments are equal-angle slices. Each segment has an arrowhead tip (tipExt)
 // extending past the outer radius R, with a leader line and label placed at midAngle.
-function HexChart({ allocs }: { allocs: Allocation[] }) {
+export function HexChart({ allocs }: { allocs: Allocation[] }) {
   const cx = 185, cy = 148, R = 68, r = 42, cr = 26, gap = 2.5, tipExt = 13;
   const midR  = (R + r) / 2;
   let angle   = -90;

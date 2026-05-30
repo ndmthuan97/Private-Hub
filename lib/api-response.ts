@@ -37,3 +37,13 @@ export function serverError(message: string, err?: unknown): NextResponse {
   }
   return NextResponse.json(body, { status: 500 })
 }
+
+export function unauthorized(message = 'Unauthorized'): NextResponse {
+  const body: ApiResponse = { statusCode: 401, message, data: null, errors: null }
+  return NextResponse.json(body, { status: 401 })
+}
+
+export function unprocessable(message: string): NextResponse {
+  const body: ApiResponse = { statusCode: 422, message, data: null, errors: null }
+  return NextResponse.json(body, { status: 422 })
+}

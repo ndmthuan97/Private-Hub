@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { ok, notFound } from "@/lib/api-response";
 import { getDb, nlmPrompts } from "@/db";
 import { eq } from "drizzle-orm";
 
@@ -28,13 +29,10 @@ export async function PATCH(
     .returning();
 
   if (!row) {
-    return NextResponse.json(
-      { statusCode: 404, message: "Prompt not found", data: null, errors: null },
-      { status: 404 }
-    );
+    return notFound("Prompt not found");
   }
 
-  return NextResponse.json({ statusCode: 200, message: "Updated", data: row, errors: null });
+  return ok(row, "Updated");
 }
 
 export async function DELETE(
@@ -44,5 +42,5 @@ export async function DELETE(
   const { id } = await params;
   const db = getDb();
   await db.delete(nlmPrompts).where(eq(nlmPrompts.id, id));
-  return NextResponse.json({ statusCode: 200, message: "Deleted", data: null, errors: null });
+  return ok(null, "Deleted");
 }

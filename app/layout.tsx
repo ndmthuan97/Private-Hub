@@ -1,9 +1,6 @@
-// app/layout.tsx
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono } from "next/font/google";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { MobileHeader } from "@/components/layout/MobileHeader";
-import { FloatingMenu } from "@/components/layout/FloatingMenu";
+import { AppShell } from "@/components/layout/AppShell";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -28,12 +25,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         />
       </head>
       <body className="font-sans antialiased min-h-screen flex bg-[var(--bg-base)]" suppressHydrationWarning>
-        <Sidebar />
-        <main className="flex-1 min-w-0 overflow-y-auto flex flex-col">
-          <MobileHeader />
-          {children}
-        </main>
-        <FloatingMenu />
+        <AppShell>{children}</AppShell>
         <Toaster
           position="bottom-right"
           richColors
@@ -48,3 +40,4 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     </html>
   );
 }
+

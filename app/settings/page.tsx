@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTheme } from '@/lib/theme'
 import { toast } from 'sonner'
 
 /* ─── Shared types & constants ───────────────────────────────── */
@@ -55,7 +56,7 @@ const BUILT_IN_GROUPS = [...new Set(BUILT_IN_ITEMS.map(i => i.group))]
 /* ─── Settings Page ──────────────────────────────────────────── */
 export default function SettingsPage() {
   const router = useRouter()
-  const [theme, setTheme] = useState<'dark' | 'light'>('light')
+  const { theme, applyTheme } = useTheme()
   const [links, setLinks] = useState<ExternalItem[]>([])
   const [groups, setGroups] = useState<CustomGroup[]>([])
   const [hiddenItems, setHiddenItems] = useState<string[]>([])
@@ -94,9 +95,6 @@ export default function SettingsPage() {
 
   /* ── Init: fetch from API ───────────────────────────────────── */
   useEffect(() => {
-    const saved = localStorage.getItem('ph_theme') as 'dark' | 'light' | null
-    const system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-    setTheme(saved ?? system)
     // Fetch sidebar config from DB
     fetch('/api/sidebar').then(r => r.json()).then(json => {
       if (json.data) {
@@ -126,7 +124,7 @@ export default function SettingsPage() {
   function persistGroups(next: CustomGroup[]) { setGroups(next); saveToApi({ groups: next }) }
   function persistHidden(next: string[]) { setHiddenItems(next); saveToApi({ hidden: next }) }
   function persistGroupOverrides(next: GroupOverrides) { setGroupOverrides(next); saveToApi({ overrides: next }) }
-  function applyTheme(t: 'dark' | 'light') { setTheme(t); localStorage.setItem('ph_theme', t); document.documentElement.setAttribute('data-theme', t) }
+
 
   /* ── Built-in visibility ───────────────────────────────────── */
   function toggleBuiltIn(href: string) {

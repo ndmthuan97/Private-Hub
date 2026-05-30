@@ -261,25 +261,17 @@ export function EntryManager({ categories }: { categories: Category[] }) {
                   {filtered.map(entry => {
                     const allocs     = entry.allocations as Allocation[];
                     const total      = parseFloat(entry.totalAmount);
-                    const totalSpent = allocs.reduce((s, a) => s + (a.spent ?? 0), 0);
-                    const hasSpent   = totalSpent > 0;
                     return (
                       <Fragment key={entry.id}>
                         <tr onClick={() => setDetail(entry)}
                           className="hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer"
                           style={{ boxShadow: "rgba(0,0,0,0.04) 0px -1px 0px 0px inset" }}>
                           <td className="px-5 py-3.5 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[15px] font-medium text-[#171717] dark:text-[#f5f5f5]">
-                                {MONTHS[entry.month-1]} {entry.year}
-                              </span>
-                              {hasSpent && (
-                                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-[#f0fdf4] dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 font-medium">
-                                  {Math.round((totalSpent/total)*100)}% dùng
-                                </span>
-                              )}
-                            </div>
+                            <span className="text-[15px] font-medium text-[#171717] dark:text-[#f5f5f5]">
+                              {MONTHS[entry.month-1]} {entry.year}
+                            </span>
                           </td>
+
                           {categories.map(c => {
                             const a = allocs.find(x => x.key === c.key);
                             return (

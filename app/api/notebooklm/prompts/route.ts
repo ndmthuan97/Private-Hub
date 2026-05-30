@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { ok, created, badRequest, notFound } from "@/lib/api-response";
 import { getDb, nlmPrompts } from "@/db";
 import { asc } from "drizzle-orm";
 
@@ -8,7 +9,7 @@ export async function GET() {
     .select()
     .from(nlmPrompts)
     .orderBy(asc(nlmPrompts.sortOrder), asc(nlmPrompts.createdAt));
-  return NextResponse.json({ statusCode: 200, message: "OK", data: rows, errors: null });
+  return ok(rows);
 }
 
 export async function POST(req: NextRequest) {
@@ -20,10 +21,7 @@ export async function POST(req: NextRequest) {
   };
 
   if (!title?.trim() || !content?.trim()) {
-    return NextResponse.json(
-      { statusCode: 400, message: "title and content are required", data: null, errors: null },
-      { status: 400 }
-    );
+    return badRequest("title and content are required");
   }
 
   const db = getDb();
@@ -37,5 +35,5 @@ export async function POST(req: NextRequest) {
     })
     .returning();
 
-  return NextResponse.json({ statusCode: 201, message: "Created", data: row, errors: null }, { status: 201 });
+  return created(row);
 }

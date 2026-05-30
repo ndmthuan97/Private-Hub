@@ -1,5 +1,5 @@
-// app/api/budget/route.ts — GET list + POST create
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { ok, created, unprocessable, serverError } from "@/lib/api-response";
 import { getDb } from "@/db";
 import { budgetEntries, budgetCategories } from "@/db/schema";
 import { desc, eq, and } from "drizzle-orm";
@@ -22,10 +22,9 @@ export async function GET(req: NextRequest) {
       .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(desc(budgetEntries.year), desc(budgetEntries.month));
 
-    return NextResponse.json({ statusCode: 200, message: "OK", data: { entries: rows }, errors: null });
+    return ok({ entries: rows });
   } catch (err) {
-    console.error("[budget GET]", err);
-    return NextResponse.json({ statusCode: 500, message: "Server error", data: null, errors: null }, { status: 500 });
+    return serverError("Server error", err);
   }
 }
 
@@ -37,10 +36,7 @@ export async function POST(req: NextRequest) {
     };
 
     if (!body.month || !body.year || !body.totalAmount) {
-      return NextResponse.json(
-        { statusCode: 422, message: "Thiếu month, year hoặc totalAmount", data: null, errors: null },
-        { status: 422 }
-      );
+      return unprocessable("Thiếu month, year hoặc totalAmount");
     }
 
     const db = getDb();
@@ -64,13 +60,10 @@ export async function POST(req: NextRequest) {
       const current       = existing[0];
       const prevTotal     = parseFloat(String(current.totalAmount));
       const newTotal      = prevTotal + body.totalAmount;
-      const prevAllocs    = (current.allocations as Array<Record<string, unknown>>);
       const prevDeposits  = (current.deposits as Array<Record<string, unknown>>) ?? [];
 
-      // Recalculate allocation amounts from new total; preserve existing spent values
+      // Recalculate allocation amounts from new total
       const allocations = cats.map((c) => {
-        const prev    = prevAllocs.find((a) => a.key === c.key);
-        const spent   = prev?.spent ?? 0;
         return {
           key:        c.key,
           label:      c.label,
@@ -78,7 +71,6 @@ export async function POST(req: NextRequest) {
           color:      c.color,
           percentage: parseFloat(String(c.percentage)),
           amount:     Math.round((newTotal * parseFloat(String(c.percentage))) / 100),
-          spent,
         };
       });
 
@@ -101,7 +93,6 @@ export async function POST(req: NextRequest) {
         color:      c.color,
         percentage: parseFloat(String(c.percentage)),
         amount:     Math.round((body.totalAmount * parseFloat(String(c.percentage))) / 100),
-        spent:      0,
       }));
 
       [result] = await db
@@ -117,13 +108,9 @@ export async function POST(req: NextRequest) {
         .returning();
     }
 
-    return NextResponse.json(
-      { statusCode: 201, message: "Đã lưu", data: { entry: result }, errors: null },
-      { status: 201 }
-    );
+    return created({ entry: result }, "Đã lưu");
   } catch (err) {
-    console.error("[budget POST]", err);
-    return NextResponse.json({ statusCode: 500, message: "Server error", data: null, errors: null }, { status: 500 });
+    return serverError("Server error", err);
   }
 }
 

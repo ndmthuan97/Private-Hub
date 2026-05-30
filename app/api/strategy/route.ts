@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { ok, created, badRequest, unauthorized, serverError } from "@/lib/api-response";
 import { getDb, roadmaps } from "@/db";
 import { asc } from "drizzle-orm";
 
 export async function GET() {
   const db = getDb();
   const data = await db.select().from(roadmaps).orderBy(asc(roadmaps.sortOrder), asc(roadmaps.createdAt));
-  return NextResponse.json({ statusCode: 200, message: "OK", data, errors: null });
+  return ok(data);
 }
 
 export async function POST(req: NextRequest) {
@@ -13,16 +14,16 @@ export async function POST(req: NextRequest) {
   const auth = req.headers.get("authorization");
   const expected = `Bearer ${process.env.CRON_SECRET}`;
   if (!process.env.CRON_SECRET || auth !== expected) {
-    return NextResponse.json({ statusCode: 401, message: "Unauthorized", data: null, errors: null }, { status: 401 });
+    return unauthorized();
   }
 
   const { title, type, content } = await req.json() as { title: string; type: string; content: string };
-  if (!title?.trim()) return NextResponse.json({ statusCode: 400, message: "Thiếu tiêu đề", data: null, errors: null }, { status: 400 });
+  if (!title?.trim()) return badRequest("Thiếu tiêu đề");
   const db = getDb();
   const [row] = await db.insert(roadmaps).values({
     title: title.trim(),
     type: type ?? "markdown",
     content: content ?? "",
   }).returning();
-  return NextResponse.json({ statusCode: 201, message: "Created", data: row, errors: null }, { status: 201 });
+  return created(row);
 }

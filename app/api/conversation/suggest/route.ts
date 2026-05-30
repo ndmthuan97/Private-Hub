@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ok, badRequest, serverError } from "@/lib/api-response";
 import { getGeminiClient, GEMINI_MODEL } from "@/lib/gemini";
 
 type Language = "en" | "jp";
@@ -49,12 +50,7 @@ export async function POST(req: NextRequest) {
     const { messages, language, scenario } = body;
 
     if (!Array.isArray(messages) || messages.length === 0 || !language || !scenario) {
-      return NextResponse.json({
-        statusCode: 400,
-        message: "Missing required fields",
-        data: null,
-        errors: null,
-      }, { status: 400 });
+      return badRequest("Missing required fields");
     }
 
     const gemini = getGeminiClient();
@@ -112,31 +108,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({
-      statusCode: 200,
-      message: "OK",
-      data: { suggestions },
-      errors: null,
-    });
+    return ok({ suggestions });
   } catch (err: unknown) {
-    console.error("[conversation/suggest] error:", err);
-
     // Detect Gemini rate limit (429) errors
     const errMsg = err instanceof Error ? err.message : String(err);
     if (errMsg.includes("429") || errMsg.includes("RESOURCE_EXHAUSTED") || errMsg.includes("quota")) {
-      return NextResponse.json({
-        statusCode: 429,
-        message: "Gemini đang bị giới hạn tốc độ. Vui lòng thử lại sau 1 phút.",
-        data: null,
-        errors: null,
-      }, { status: 429 });
+      return NextResponse.json(
+        { statusCode: 429, message: "Gemini đang bị giới hạn tốc độ. Vui lòng thử lại sau 1 phút.", data: null, errors: null },
+        { status: 429 }
+      );
     }
 
-    return NextResponse.json({
-      statusCode: 500,
-      message: "Internal server error",
-      data: null,
-      errors: null,
-    }, { status: 500 });
+    return serverError("Internal server error", err);
   }
 }
