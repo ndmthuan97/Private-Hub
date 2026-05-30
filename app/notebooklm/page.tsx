@@ -641,16 +641,13 @@ export default function NotebookLMPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--bg-base)] pt-14 md:pt-0">
+    <div className="flex flex-col min-h-screen bg-[var(--bg-base)]">
       {/* ── Main content area ──────────────────────────────────── */}
-      <div className="flex-1 px-5 md:px-8 py-6 w-full">
+      <div className="flex-1 px-5 md:px-8 pt-2 pb-6 md:py-6 w-full">
 
         {/* Header — Strategy-style: title + action buttons */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-[22px] font-bold tracking-tight text-[#171717] dark:text-[#f5f5f5]">NotebookLM</h1>
-          </div>
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-end mb-3 md:mb-5">
+          <div className="flex items-center gap-1.5 ml-auto">
             <Tip label="Mở NotebookLM">
               <a href={NLM_URL} target="_blank" rel="noopener noreferrer"
                 className="flex h-9 w-9 items-center justify-center rounded-[7px] text-[#666] dark:text-[#888] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors shrink-0"

@@ -2,8 +2,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  MessageCircle, Wallet, LayoutDashboard, LogOut, Map, Globe, X,
-  CalendarDays, Menu, BookOpen, BookA, ChevronLeft, ChevronRight, Headphones, PenLine, Languages,
+  MessageCircle, Wallet, LayoutDashboard, LogOut, Map, Globe,
+  CalendarDays, BookOpen, BookA, ChevronLeft, ChevronRight, Headphones, PenLine, Languages,
   Code, Music, Video, Image, FileText, Database, Cloud, ShoppingBag, Gamepad2,
   GraduationCap, Heart, Star, Rocket, Zap, Coffee, Briefcase, Palette, Newspaper,
   Link as LinkIcon, Camera, Mail, Calculator, Shield, Terminal, Search, Home, Settings,
@@ -32,7 +32,7 @@ type GroupOverrides = Record<string, GroupOverride>;
 
 /* ─── Constants ─────────────────────────────────────────────────── */
 const NAV_GROUPS: NavGroup[] = [
-  { items: [{ href: "/", label: "Tổng quan", icon: LayoutDashboard, color: "#666" }] },
+  { items: [{ href: "/", label: "Dashboard", icon: LayoutDashboard, color: "#666" }] },
   { label: "Học tập", items: [
     { href: "/conversation", label: "Luyện Giao Tiếp", icon: MessageCircle, color: "hsl(160,84%,42%)" },
     { href: "/vocab",        label: "Từ Vựng",         icon: BookA,         color: "hsl(239,84%,67%)" },
@@ -47,8 +47,16 @@ const NAV_GROUPS: NavGroup[] = [
   ]},
   { label: "Công cụ", items: [
     { href: "/notebooklm", label: "NotebookLM", icon: BookOpen, color: "hsl(217,91%,60%)" },
+    { href: "/trending",   label: "Trending",   icon: TrendingUp, color: "hsl(340,75%,55%)" },
   ]},
 ];
+
+// Page title map for mobile top bar
+const TITLE_MAP: Record<string, string> = Object.fromEntries(
+  NAV_GROUPS.flatMap(g => g.items.map(i => [i.href, i.label]))
+);
+TITLE_MAP["/settings"] = "Cài đặt";
+TITLE_MAP["/embed"] = "Xem trang";
 
 const BUILTIN_PREFIX = "__builtin:";
 
@@ -66,7 +74,6 @@ export function Sidebar() {
   const [groups, setGroups]     = useState<CustomGroup[]>([]);
   const [hiddenItems, setHiddenItems] = useState<string[]>([]);
   const [groupOverrides, setGroupOverrides] = useState<GroupOverrides>({});
-  const [mobileOpen, setMobileOpen]   = useState(false);
 
   // Fetch sidebar config from API
   const fetchConfig = useCallback(async () => {
@@ -103,12 +110,6 @@ export function Sidebar() {
     return () => window.removeEventListener("ph_sidebar_sync", onSync);
   }, [fetchConfig]);
 
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
-  useEffect(() => {
-    if (mobileOpen) { document.body.style.overflow = "hidden"; }
-    else { document.body.style.overflow = ""; }
-    return () => { document.body.style.overflow = ""; };
-  }, [mobileOpen]);
 
   /* ── Actions ───────────────────────────────────────────────────── */
   function toggleSidebar() {
@@ -156,28 +157,12 @@ export function Sidebar() {
 
   return (
     <>
-      {/* ── Mobile top bar ── */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-30 h-14 flex items-center px-4 bg-white dark:bg-[#111] shrink-0"
-        style={{ boxShadow: "rgba(0,0,0,0.06) 0px 1px 0px 0px" }}>
-        <button onClick={() => setMobileOpen(true)}
-          className="flex h-9 w-9 items-center justify-center rounded-[8px] text-[#666] dark:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer">
-          <Menu className="w-5 h-5" />
-        </button>
-        <span className="ml-2.5 text-[15px] font-semibold text-[#171717] dark:text-[#f5f5f5]">Private Hub</span>
-      </div>
-
-      {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setMobileOpen(false)} />
-      )}
-
-      {/* ── Sidebar ── */}
+      {/* ── Sidebar (desktop only) ── */}
       <aside
         className={cn(
-          "relative flex flex-col shrink-0 h-screen bg-white dark:bg-[#111] overflow-visible z-50",
-          "fixed inset-y-0 left-0",
-          mobileOpen ? "translate-x-0" : "-translate-x-full",
-          "md:sticky md:top-0 md:translate-x-0",
-          "[transition:transform_200ms_ease] md:[transition:width_200ms_ease]",
+          "hidden md:flex relative flex-col shrink-0 h-screen bg-white dark:bg-[#111] overflow-visible z-50",
+          "sticky top-0",
+          "[transition:width_200ms_ease]",
         )}
         style={{ width: expanded ? 224 : 52, boxShadow: "rgba(0,0,0,0.06) 1px 0 0 0" }}
       >
@@ -199,10 +184,6 @@ export function Sidebar() {
                 style={{ opacity: expanded ? 1 : 0, transition: "opacity 150ms ease" }}>
                 Private Hub
               </span>
-              <button onClick={() => setMobileOpen(false)}
-                className="md:hidden flex h-6 w-6 items-center justify-center rounded-[5px] text-[#bbb] hover:text-[#666] dark:hover:text-[#aaa] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer shrink-0">
-                <X className="w-3.5 h-3.5" />
-              </button>
             </div>
           </div>
 
@@ -216,7 +197,7 @@ export function Sidebar() {
               if (visibleBuiltIn.length === 0 && visibleCustom.length === 0) return null;
               const displayLabel = override?.customLabel || group.label;
               return (
-                <div key={gi} className={cn(gi > 0 && 'pt-2')} style={gi > 0 ? { boxShadow: 'rgba(0,0,0,0.06) 0px -1px 0px 0px inset' } : undefined}>
+                <div key={gi} className={cn(gi > 0 && 'pt-2')}>
                   {displayLabel && expanded && (
                     <p className="px-[10px] pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-[#bbb] dark:text-[#555] whitespace-nowrap">{displayLabel}</p>
                   )}
@@ -254,7 +235,7 @@ export function Sidebar() {
               const items = customGroupLinks(group.id);
               if (items.length === 0 && !expanded) return null;
               return (
-                <div key={group.id} className="pt-2" style={{ boxShadow: 'rgba(0,0,0,0.06) 0px -1px 0px 0px inset' }}>
+                <div key={group.id} className="pt-2">
                   {expanded && (
                     <p className="px-[10px] pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-[#bbb] dark:text-[#555] whitespace-nowrap">{group.label}</p>
                   )}
@@ -267,7 +248,7 @@ export function Sidebar() {
 
             {/* ── Ungrouped custom links ── */}
             {ungroupedItems.length > 0 && (
-              <div className="pt-2" style={{ boxShadow: "rgba(0,0,0,0.06) 0px -1px 0px 0px inset" }}>
+              <div className="pt-2">
                 {groups.length > 0 && expanded && (
                   <p className="px-[10px] pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-[#bbb] dark:text-[#555] whitespace-nowrap">Khác</p>
                 )}

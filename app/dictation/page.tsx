@@ -33,9 +33,9 @@ export default function DictationPage() {
   }
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-white dark:bg-[#0a0a0a] flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-white dark:bg-[#0a0a0a] shrink-0"
+    <div ref={containerRef} className="flex-1 min-h-0 bg-white dark:bg-[#0a0a0a] flex flex-col">
+      {/* Header — hidden on mobile */}
+      <header className="sticky top-0 z-10 bg-white dark:bg-[#0a0a0a] shrink-0 hidden md:block"
         style={{ boxShadow: 'rgba(0,0,0,0.06) 0px 1px 0px 0px' }}>
         <div className="mx-auto max-w-7xl px-4 h-11 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
@@ -43,9 +43,6 @@ export default function DictationPage() {
               className="flex items-center gap-1.5 text-[12px] text-[#666] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors shrink-0 cursor-pointer">
               <ArrowLeft className="h-3.5 w-3.5" /> Quay lại
             </button>
-            <h1 className="text-[13px] font-semibold text-[#171717] dark:text-[#f5f5f5] truncate">
-              Daily Dictation
-            </h1>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button onClick={toggleFullscreen}

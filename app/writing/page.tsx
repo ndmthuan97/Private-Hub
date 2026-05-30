@@ -78,12 +78,12 @@ function TopBar({ onBack, right }: { onBack?: () => void; right?: React.ReactNod
       <div className="flex items-center gap-3">
         {onBack && (
           <button onClick={onBack}
-            className="flex h-7 w-7 items-center justify-center rounded-[4px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
+            className="hidden md:flex h-7 w-7 items-center justify-center rounded-[4px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
             style={{ boxShadow: "var(--shadow-border)" }}>
             <ArrowLeft className="w-4 h-4" />
           </button>
         )}
-        <p className="text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888]">
+        <p className="hidden md:block text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888]">
           ✍️ Luyện Viết
         </p>
       </div>
@@ -232,12 +232,12 @@ export default function WritingPage() {
   if (step === "language") return (
     <div className="flex flex-col items-center justify-center h-screen px-4">
       <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-1.5">
-          <p className="text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888]">
+        <div className="text-center space-y-1">
+          <p className="hidden md:block text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888]">
             ✍️ Luyện Viết
           </p>
-          <h1 className="text-[22px] font-semibold text-[#171717] dark:text-[#f5f5f5]">Chọn ngôn ngữ</h1>
-          <p className="text-[13px] text-[#999]">Bạn muốn luyện viết ngôn ngữ nào hôm nay?</p>
+          <h1 className="text-[18px] md:text-[22px] font-semibold text-[#171717] dark:text-[#f5f5f5]">Chọn ngôn ngữ</h1>
+          <p className="text-[12px] md:text-[13px] text-[#999]">Bạn muốn luyện viết ngôn ngữ nào hôm nay?</p>
         </div>
         <div className="flex justify-center gap-3">
           {([

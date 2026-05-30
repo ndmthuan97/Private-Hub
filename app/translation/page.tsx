@@ -171,15 +171,13 @@ function TopBar({ onBack, right }: { onBack?: () => void; right?: React.ReactNod
         {onBack && (
           <Tip label="Quay lại">
             <button onClick={onBack}
-              className="flex h-7 w-7 items-center justify-center rounded-[4px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
+              className="hidden md:flex h-7 w-7 items-center justify-center rounded-[4px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
               style={{ boxShadow: "var(--shadow-border)" }}>
               <ArrowLeft className="w-4 h-4" />
             </button>
           </Tip>
         )}
-        <p className="text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888]">
-          🌐 Luyện Dịch
-        </p>
+
       </div>
       {right}
     </div>
@@ -553,16 +551,19 @@ export default function TranslationPage() {
      ════════════════════════════════════════════════════════════ */
   return (
     <div className="flex flex-col h-screen">
-      <TopBar />
+      {/* TopBar — desktop only (empty on mobile) */}
+      <div className="hidden md:block">
+        <TopBar />
+      </div>
 
-      <div className="flex-1 flex items-center justify-center px-4 py-8 overflow-y-auto">
+      <div className="flex-1 flex md:items-center justify-center px-4 py-6 md:py-8 overflow-y-auto">
         <div className="w-full max-w-2xl space-y-5">
-          {/* Title */}
-          <div className="text-center space-y-1.5">
-            <h1 className="text-[22px] font-semibold text-[#171717] dark:text-[#f5f5f5]">
+          {/* Title — compact on mobile */}
+          <div className="text-center space-y-1">
+            <h1 className="text-[18px] md:text-[22px] font-semibold text-[#171717] dark:text-[#f5f5f5]">
               Chọn ngôn ngữ & nhập đoạn văn
             </h1>
-            <p className="text-[13px] text-[#999]">
+            <p className="text-[12px] md:text-[13px] text-[#999]">
               AI sẽ phân tích cấu trúc ngữ pháp với highlight màu sắc và trích xuất cụm từ &quot;ăn điểm&quot;
             </p>
           </div>

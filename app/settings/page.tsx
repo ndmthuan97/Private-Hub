@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Globe, Code, Music, Video, Image, FileText, Database, Cloud, ShoppingBag, Gamepad2,
   GraduationCap, Heart, Star, Rocket, Zap, Coffee, Briefcase, Palette, Newspaper,
@@ -8,7 +9,7 @@ import {
   Shield, Terminal, Search, Home, Settings, Users, TrendingUp, BarChart3, Wrench, Cpu,
   Smartphone, Monitor, Wifi, Lock, Trash2, Pencil, Check, X, FolderOpen, ExternalLink,
   RefreshCw, Loader2, Sun, Moon, Eye, EyeOff, LayoutDashboard, Wallet, CalendarDays,
-  BookA, Plus, FolderPlus,
+  BookA, Plus, FolderPlus, ArrowLeft,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -53,11 +54,13 @@ const BUILT_IN_GROUPS = [...new Set(BUILT_IN_ITEMS.map(i => i.group))]
 
 /* ─── Settings Page ──────────────────────────────────────────── */
 export default function SettingsPage() {
+  const router = useRouter()
   const [theme, setTheme] = useState<'dark' | 'light'>('light')
   const [links, setLinks] = useState<ExternalItem[]>([])
   const [groups, setGroups] = useState<CustomGroup[]>([])
   const [hiddenItems, setHiddenItems] = useState<string[]>([])
   const [groupOverrides, setGroupOverrides] = useState<GroupOverrides>({})
+  const [menuGrid, setMenuGrid] = useState(4)
 
   // Edit link
   const [editingLink, setEditingLink] = useState<string | null>(null)
@@ -102,6 +105,10 @@ export default function SettingsPage() {
         setHiddenItems((json.data.hidden as string[]) ?? [])
         setGroupOverrides((json.data.overrides as GroupOverrides) ?? {})
       }
+    }).catch(() => {})
+    // Fetch menu grid size from Redis
+    fetch('/api/settings/menu').then(r => r.json()).then(json => {
+      if (json.data?.gridSize) setMenuGrid(json.data.gridSize)
     }).catch(() => {})
   }, [])
 
@@ -208,14 +215,14 @@ export default function SettingsPage() {
   /* ─── RENDER ───────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
-      <header className="sticky top-0 z-10 bg-white dark:bg-[#0a0a0a]"
+      <header className="sticky top-0 z-10 bg-white dark:bg-[#0a0a0a] hidden md:block"
         style={{ boxShadow: 'rgba(0,0,0,0.06) 0px 1px 0px 0px' }}>
-        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center gap-3">
-          <Settings className="w-5 h-5 text-[#999]" />
-          <div>
-            <h1 className="text-[15px] font-semibold text-[#171717] dark:text-[#f5f5f5] tracking-tight">Cài đặt</h1>
-            <p className="text-[11px] text-[#999]">Giao diện, sidebar và trang đã thêm</p>
-          </div>
+        <div className="max-w-5xl mx-auto px-6 h-11 flex items-center gap-3">
+          <button onClick={() => router.back()}
+            className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#666] dark:text-[#888] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer shrink-0"
+            style={{ boxShadow: 'var(--shadow-border)' }}>
+            <ArrowLeft className="w-3.5 h-3.5" />
+          </button>
         </div>
       </header>
 
@@ -242,6 +249,45 @@ export default function SettingsPage() {
                     <p className="text-[10px] text-[#999]">{desc}</p>
                   </div>
                   {theme === val && <Check className="w-4 h-4 text-[hsl(25,95%,53%)] ml-auto" />}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ═══ 1.5 QUICK MENU (mobile) ═════════════════════════ */}
+        <section className="md:hidden">
+          <h2 className="text-[13px] font-semibold text-[#171717] dark:text-[#f5f5f5] uppercase tracking-widest mb-4">Quick Menu</h2>
+          <div className="rounded-[10px] bg-white dark:bg-[#111] p-4" style={{ boxShadow: 'var(--shadow-border)' }}>
+            <p className="text-[12px] text-[#999] mb-3">Kích thước lưới menu nhanh</p>
+            <div className="flex gap-2">
+              {[3, 4, 5].map((size) => (
+                <button
+                  key={size}
+                  onClick={async () => {
+                    setMenuGrid(size)
+                    await fetch('/api/settings/menu', {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ gridSize: size }),
+                    })
+                    window.dispatchEvent(new Event('ph_menu_grid_change'))
+                    toast.success(`Đã đổi thành ${size}×${size}`)
+                  }}
+                  className={cn(
+                    'flex-1 py-3 rounded-[8px] text-center transition-all cursor-pointer',
+                    menuGrid === size
+                      ? 'bg-[#f5f5f5] dark:bg-[#1a1a1a] ring-2 ring-[hsl(25,95%,53%)]'
+                      : 'hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a]'
+                  )}
+                  style={{ boxShadow: 'var(--shadow-border)' }}
+                >
+                  <span className={cn(
+                    'text-[14px] font-semibold',
+                    menuGrid === size ? 'text-[hsl(25,95%,53%)]' : 'text-[#171717] dark:text-[#f5f5f5]'
+                  )}>
+                    {size}×{size}
+                  </span>
                 </button>
               ))}
             </div>

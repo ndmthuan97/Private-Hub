@@ -341,7 +341,7 @@ function DetailView({ item, onBack, onEdit, onDelete }: {
   }
 
   return (
-    <div className="flex flex-col" style={{ height: "100vh" }}>
+    <div className="flex flex-col flex-1 min-h-0">
       {/* Header */}
       <div className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-[#111] shrink-0"
         style={{ boxShadow: "rgba(0,0,0,0.06) 0 1px 0 0" }}>
@@ -368,14 +368,14 @@ function DetailView({ item, onBack, onEdit, onDelete }: {
           )}
           <Tip label="Chỉnh sửa">
             <button onClick={onEdit}
-              className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
+              className="hidden md:flex h-8 w-8 items-center justify-center rounded-[6px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
               style={{ boxShadow: "var(--shadow-border)" }}>
               <Pencil className="w-3.5 h-3.5" />
             </button>
           </Tip>
           <Tip label="Xóa">
             <button onClick={handleDelete} disabled={deleting}
-              className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#999] hover:text-red-500 transition-colors cursor-pointer disabled:opacity-40"
+              className="hidden md:flex h-8 w-8 items-center justify-center rounded-[6px] text-[#999] hover:text-red-500 transition-colors cursor-pointer disabled:opacity-40"
               style={{ boxShadow: "var(--shadow-border)" }}>
               {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
             </button>
@@ -384,9 +384,9 @@ function DetailView({ item, onBack, onEdit, onDelete }: {
       </div>
 
       {/* Body */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {item.type === "embed" ? (
-          <iframe src={toEmbedUrl(item.content)} className="flex-1 w-full border-0" title={item.title} allowFullScreen />
+          <iframe src={toEmbedUrl(item.content)} className="flex-1 w-full border-0 min-h-0" title={item.title} allowFullScreen />
         ) : (
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-3xl mx-auto px-8 py-6
@@ -665,7 +665,7 @@ function FolderView({ folder, items, folders, onBack, onReload, onView, onEdit, 
       <div className="flex items-center gap-2">
         <Tip label="Quay lại">
           <button onClick={onBack}
-            className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#666] dark:text-[#888] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer"
+            className="hidden md:flex h-8 w-8 items-center justify-center rounded-[6px] text-[#666] dark:text-[#888] hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer"
             style={{ boxShadow: "var(--shadow-border)" }}>
             <ArrowLeft className="w-3.5 h-3.5" />
           </button>
@@ -887,10 +887,9 @@ export default function StrategyPage() {
         />
       )}
 
-      {/* Header — icon-only action buttons */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-[22px] font-bold tracking-tight text-[#171717] dark:text-[#f5f5f5]">Strategy</h1>
-        <div className="flex items-center gap-1.5">
+      {/* Header — action buttons only */}
+      <div className="flex items-center justify-end">
+        <div className="flex items-center gap-1.5 ml-auto">
           <Tip label="Tạo folder mới">
             <button onClick={() => setFolderDialogOpen(true)}
               className="flex h-9 w-9 items-center justify-center rounded-[7px] text-[#666] dark:text-[#888] hover:bg-[#f5f5f5] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer"

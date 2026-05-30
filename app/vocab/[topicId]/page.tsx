@@ -899,7 +899,7 @@ export default function VocabTopicPage({ params }: { params: Promise<{ topicId: 
     <div className="px-4 md:px-8 py-6 md:py-8 space-y-4">
 
       {/* ── Back ── */}
-      <button onClick={() => router.back()} className="flex items-center gap-1.5 text-[12px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer">
+      <button onClick={() => router.back()} className="hidden md:flex items-center gap-1.5 text-[12px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer">
         <ArrowLeft className="h-3.5 w-3.5" /> Quay lại
       </button>
 

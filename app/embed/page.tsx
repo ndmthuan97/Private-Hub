@@ -57,7 +57,7 @@ function EmbedContent() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[var(--bg-base)]">
+    <div className="flex flex-col flex-1 min-h-0 bg-[var(--bg-base)]">
       {/* Top bar with page info */}
       <div className="shrink-0 px-4 h-10 flex items-center justify-between bg-white dark:bg-[#111]"
         style={{ boxShadow: 'rgba(0,0,0,0.06) 0px 1px 0px 0px' }}>
@@ -83,8 +83,8 @@ function EmbedContent() {
         </div>
       </div>
 
-      {/* Content area */}
-      <div className="flex-1 relative min-h-0">
+      {/* Content area — flex-col so iframe stops above floating menu on mobile */}
+      <div className="flex-1 relative min-h-0 flex flex-col">
         {/* Loading overlay */}
         {status === 'loading' && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[var(--bg-base)]">
@@ -123,11 +123,11 @@ function EmbedContent() {
           </div>
         )}
 
-        {/* Iframe — always rendered so onLoad/onError can fire */}
+        {/* Iframe — flex-1 ensures it stops at pb-20 boundary on mobile */}
         <iframe
           ref={iframeRef}
           src={url}
-          className="w-full h-full border-0"
+          className="flex-1 w-full border-0 min-h-0"
           style={{ display: status === 'error' ? 'none' : 'block' }}
           onLoad={handleLoad}
           onError={handleError}

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Sun, Moon, Lock } from "lucide-react";
 
 // ─── Theme toggle (persisted in localStorage) ─────────────────
@@ -45,7 +45,7 @@ function GridBackground() {
 
 // ─── Inner form (needs useSearchParams) ───────────────────────
 function LoginForm() {
-  const router       = useRouter();
+
   const searchParams = useSearchParams();
   const from         = searchParams.get("from") ?? "/";
   const { theme, toggle } = useTheme();
@@ -70,8 +70,8 @@ function LoginForm() {
       });
       const json = await res.json();
       if (json.statusCode === 200) {
-        router.replace(from);
-        router.refresh();
+        // Full page reload to ensure cookie is sent with next request
+        window.location.href = from;
       } else {
         setError("Passkey không đúng. Thử lại.");
         setPasskey("");

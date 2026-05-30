@@ -17,6 +17,8 @@ export function EntryManager({ categories }: { categories: Category[] }) {
   const [search, setSearch]   = useState("");
   const [month, setMonth]     = useState(() => new Date().getMonth() + 1);
   const [year, setYear]       = useState(() => new Date().getFullYear());
+  const [filterYear, setFilterYear] = useState<number | null>(null);
+  const [filterMonth, setFilterMonth] = useState<number | null>(null);
   const [amount, setAmount]   = useState("");
   const [note, setNote]       = useState("");
   const [saving, setSaving]   = useState(false);
@@ -77,10 +79,14 @@ export function EntryManager({ categories }: { categories: Category[] }) {
     });
   }
 
+  const availableYears = [...new Set(entries.map(e => e.year))].sort((a, b) => b - a);
+
   const filtered = entries
     .filter(e => {
-      if (!search) return true;
-      return `${MONTHS[e.month-1]} ${e.year}`.toLowerCase().includes(search.toLowerCase());
+      if (filterYear && e.year !== filterYear) return false;
+      if (filterMonth && e.month !== filterMonth) return false;
+      if (search) return `${MONTHS[e.month-1]} ${e.year}`.toLowerCase().includes(search.toLowerCase());
+      return true;
     })
     .sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month);
 
@@ -177,12 +183,32 @@ export function EntryManager({ categories }: { categories: Category[] }) {
           <p className="text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888]">
             Lịch sử phân bổ
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Year filter */}
+            <select
+              value={filterYear ?? ""}
+              onChange={e => setFilterYear(e.target.value ? Number(e.target.value) : null)}
+              className="h-7 px-2 text-[12px] font-medium rounded-[5px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5] cursor-pointer"
+              style={{ boxShadow: "var(--shadow-border)" }}
+            >
+              <option value="">Tất cả năm</option>
+              {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+            {/* Month filter */}
+            <select
+              value={filterMonth ?? ""}
+              onChange={e => setFilterMonth(e.target.value ? Number(e.target.value) : null)}
+              className="h-7 px-2 text-[12px] font-medium rounded-[5px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5] cursor-pointer"
+              style={{ boxShadow: "var(--shadow-border)" }}
+            >
+              <option value="">Tất cả tháng</option>
+              {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+            </select>
             <div className="relative flex-1 sm:flex-none">
               <Search className="absolute left-2 top-1.5 w-3.5 h-3.5 text-[#bbb] pointer-events-none" />
-              <input type="text" placeholder="Tìm tháng/năm..."
+              <input type="text" placeholder="Tìm..."
                 value={search} onChange={e => setSearch(e.target.value)}
-                className="h-7 pl-7 pr-3 w-full sm:w-36 text-[12px] rounded-[5px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5]"
+                className="h-7 pl-7 pr-3 w-full sm:w-28 text-[12px] rounded-[5px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5]"
                 style={{ boxShadow: "var(--shadow-border)" }} />
             </div>
             <Tip label="Thêm phân bổ mới">
@@ -201,67 +227,92 @@ export function EntryManager({ categories }: { categories: Category[] }) {
             {search ? "Không tìm thấy." : "Chưa có bản ghi. Thêm phân bổ ở trên."}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-[15px]">
-              <thead>
-                <tr style={{ boxShadow: "rgba(0,0,0,0.06) 0px 1px 0px 0px" }}>
-                  <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-[#171717] dark:text-[#f5f5f5]">
-                    Tháng / Năm
-                  </th>
-                  {categories.map(c => (
-                    <th key={c.id} className="px-3 py-3 text-right text-[11px] font-semibold uppercase tracking-widest whitespace-nowrap"
-                      style={{ color: c.color }}>
-                      {c.label}
+          <>
+            {/* ── Mobile: Card list ── */}
+            <div className="md:hidden space-y-2 px-3 py-2">
+              {filtered.map(entry => {
+                const total = parseFloat(entry.totalAmount);
+                return (
+                  <div
+                    key={entry.id}
+                    onClick={() => setDetail(entry)}
+                    className="flex items-center justify-between rounded-[10px] bg-[#fafafa] dark:bg-[#1a1a1a] px-4 py-3 cursor-pointer active:scale-[0.98] transition-transform"
+                    style={{ boxShadow: "var(--shadow-border)" }}
+                  >
+                    <span className="text-[14px] font-medium text-[#171717] dark:text-[#f5f5f5]">
+                      {MONTHS[entry.month-1]} {entry.year}
+                    </span>
+                    <span className="text-[14px] font-bold tabular-nums text-[#171717] dark:text-[#f5f5f5]">
+                      {formatVND(total)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ── Desktop: Table ── */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-[15px]">
+                <thead>
+                  <tr style={{ boxShadow: "rgba(0,0,0,0.06) 0px 1px 0px 0px" }}>
+                    <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-[#171717] dark:text-[#f5f5f5]">
+                      Tháng / Năm
                     </th>
-                  ))}
-                  <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-widest text-[#171717] dark:text-[#f5f5f5]">
-                    Tổng
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(entry => {
-                  const allocs     = entry.allocations as Allocation[];
-                  const total      = parseFloat(entry.totalAmount);
-                  const totalSpent = allocs.reduce((s, a) => s + (a.spent ?? 0), 0);
-                  const hasSpent   = totalSpent > 0;
-                  return (
-                    <Fragment key={entry.id}>
-                      <tr onClick={() => setDetail(entry)}
-                        className="hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer"
-                        style={{ boxShadow: "rgba(0,0,0,0.04) 0px -1px 0px 0px inset" }}>
-                        <td className="px-5 py-3.5 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[15px] font-medium text-[#171717] dark:text-[#f5f5f5]">
-                              {MONTHS[entry.month-1]} {entry.year}
-                            </span>
-                            {hasSpent && (
-                              <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-[#f0fdf4] dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 font-medium">
-                                {Math.round((totalSpent/total)*100)}% dùng
+                    {categories.map(c => (
+                      <th key={c.id} className="px-3 py-3 text-right text-[11px] font-semibold uppercase tracking-widest whitespace-nowrap"
+                        style={{ color: c.color }}>
+                        {c.label}
+                      </th>
+                    ))}
+                    <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-widest text-[#171717] dark:text-[#f5f5f5]">
+                      Tổng
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(entry => {
+                    const allocs     = entry.allocations as Allocation[];
+                    const total      = parseFloat(entry.totalAmount);
+                    const totalSpent = allocs.reduce((s, a) => s + (a.spent ?? 0), 0);
+                    const hasSpent   = totalSpent > 0;
+                    return (
+                      <Fragment key={entry.id}>
+                        <tr onClick={() => setDetail(entry)}
+                          className="hover:bg-[#fafafa] dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer"
+                          style={{ boxShadow: "rgba(0,0,0,0.04) 0px -1px 0px 0px inset" }}>
+                          <td className="px-5 py-3.5 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[15px] font-medium text-[#171717] dark:text-[#f5f5f5]">
+                                {MONTHS[entry.month-1]} {entry.year}
                               </span>
-                            )}
-                          </div>
-                        </td>
-                        {categories.map(c => {
-                          const a = allocs.find(x => x.key === c.key);
-                          return (
-                            <td key={c.id} className="px-3 py-3.5 text-right whitespace-nowrap text-[14px] text-[#999] tabular-nums">
-                              {a ? formatVND(a.amount) : "–"}
-                            </td>
-                          );
-                        })}
-                        <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                          <span className="text-[15px] font-semibold tabular-nums text-[#171717] dark:text-[#f5f5f5]">
-                            {formatVND(total)}
-                          </span>
-                        </td>
-                      </tr>
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                              {hasSpent && (
+                                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-[#f0fdf4] dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 font-medium">
+                                  {Math.round((totalSpent/total)*100)}% dùng
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          {categories.map(c => {
+                            const a = allocs.find(x => x.key === c.key);
+                            return (
+                              <td key={c.id} className="px-3 py-3.5 text-right whitespace-nowrap text-[14px] text-[#999] tabular-nums">
+                                {a ? formatVND(a.amount) : "–"}
+                              </td>
+                            );
+                          })}
+                          <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                            <span className="text-[15px] font-semibold tabular-nums text-[#171717] dark:text-[#f5f5f5]">
+                              {formatVND(total)}
+                            </span>
+                          </td>
+                        </tr>
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

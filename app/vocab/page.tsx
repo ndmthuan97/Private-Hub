@@ -293,12 +293,6 @@ export default function VocabPage() {
   return (
     <div className="px-4 md:px-8 py-6 md:py-8 space-y-4">
 
-      {/* ── Page header ── */}
-      <div>
-        <p className="text-[11px] font-medium uppercase tracking-widest text-[#999] mb-1">Vocabulary</p>
-        <h1 className="text-[22px] font-semibold tracking-tight text-[#171717] dark:text-[#f5f5f5]">Học Từ Vựng</h1>
-      </div>
-
       {/* ── Main card ── */}
       <div className="rounded-[8px] bg-white dark:bg-[#111] overflow-hidden" style={{ boxShadow: 'var(--shadow-card)' }}>
 
