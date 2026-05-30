@@ -18,7 +18,6 @@ export function EntryManager({ categories }: { categories: Category[] }) {
   const [month, setMonth]     = useState(() => new Date().getMonth() + 1);
   const [year, setYear]       = useState(() => new Date().getFullYear());
   const [filterYear, setFilterYear] = useState<number | null>(null);
-  const [filterMonth, setFilterMonth] = useState<number | null>(null);
   const [amount, setAmount]   = useState("");
   const [note, setNote]       = useState("");
   const [saving, setSaving]   = useState(false);
@@ -84,7 +83,6 @@ export function EntryManager({ categories }: { categories: Category[] }) {
   const filtered = entries
     .filter(e => {
       if (filterYear && e.year !== filterYear) return false;
-      if (filterMonth && e.month !== filterMonth) return false;
       if (search) return `${MONTHS[e.month-1]} ${e.year}`.toLowerCase().includes(search.toLowerCase());
       return true;
     })
@@ -119,7 +117,7 @@ export function EntryManager({ categories }: { categories: Category[] }) {
               style={{ boxShadow: "rgba(0,0,0,0.06) 0px 1px 0px 0px" }}>
               <div>
                 <p className="text-[11px] font-medium uppercase tracking-widest text-[#999]">Ngân sách</p>
-                <p className="text-[18px] font-semibold text-[#171717] dark:text-[#f5f5f5] mt-0.5">Thêm phân bổ mới</p>
+                <p className="text-[18px] font-semibold text-[#171717] dark:text-[#f5f5f5] mt-0.5">Thêm phân bổ</p>
               </div>
               <button onClick={() => setAddOpen(false)}
                 className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#999] hover:text-[#171717] dark:hover:text-[#f5f5f5] transition-colors cursor-pointer"
@@ -143,7 +141,7 @@ export function EntryManager({ categories }: { categories: Category[] }) {
                 </div>
               </div>
               <div>
-                <label className="text-[11px] font-medium uppercase tracking-widest text-[#999] mb-1.5 block">Tổng thu nhập</label>
+                <label className="text-[11px] font-medium uppercase tracking-widest text-[#999] mb-1.5 block">Số tiền</label>
                 <input type="text" inputMode="numeric" autoFocus
                   placeholder="VD: 10,000,000"
                   value={amount} onChange={e => setAmount(e.target.value)}
@@ -152,7 +150,7 @@ export function EntryManager({ categories }: { categories: Category[] }) {
                   style={{ boxShadow: "var(--shadow-border)" }} />
               </div>
               <div>
-                <label className="text-[11px] font-medium uppercase tracking-widest text-[#999] mb-1.5 block">Ghi chú đợt <span className="normal-case text-[#bbb]">(tuỳ chọn)</span></label>
+                <label className="text-[11px] font-medium uppercase tracking-widest text-[#999] mb-1.5 block">Ghi chú <span className="normal-case text-[#bbb]">(tuỳ chọn)</span></label>
                 <input type="text"
                   placeholder="VD: Lương, Freelance, Thưởng..."
                   value={note} onChange={e => setNote(e.target.value)}
@@ -181,7 +179,7 @@ export function EntryManager({ categories }: { categories: Category[] }) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-5 py-3"
           style={{ boxShadow: "rgba(0,0,0,0.06) 0px 1px 0px 0px" }}>
           <p className="text-[11px] font-medium uppercase tracking-widest text-[#666] dark:text-[#888]">
-            Lịch sử phân bổ
+            Lịch sử
           </p>
           <div className="flex items-center gap-2 flex-wrap">
             {/* Year filter */}
@@ -191,18 +189,8 @@ export function EntryManager({ categories }: { categories: Category[] }) {
               className="h-7 px-2 text-[12px] font-medium rounded-[5px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5] cursor-pointer"
               style={{ boxShadow: "var(--shadow-border)" }}
             >
-              <option value="">Tất cả năm</option>
+              <option value="">Tất cả</option>
               {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-            {/* Month filter */}
-            <select
-              value={filterMonth ?? ""}
-              onChange={e => setFilterMonth(e.target.value ? Number(e.target.value) : null)}
-              className="h-7 px-2 text-[12px] font-medium rounded-[5px] bg-[#fafafa] dark:bg-[#1a1a1a] text-[#171717] dark:text-[#f5f5f5] cursor-pointer"
-              style={{ boxShadow: "var(--shadow-border)" }}
-            >
-              <option value="">Tất cả tháng</option>
-              {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
             </select>
             <div className="relative flex-1 sm:flex-none">
               <Search className="absolute left-2 top-1.5 w-3.5 h-3.5 text-[#bbb] pointer-events-none" />
@@ -224,7 +212,7 @@ export function EntryManager({ categories }: { categories: Category[] }) {
           <div className="px-5 py-8 text-center text-[13px] text-[#999]">Đang tải...</div>
         ) : filtered.length === 0 ? (
           <div className="px-5 py-10 text-center text-[13px] text-[#999]">
-            {search ? "Không tìm thấy." : "Chưa có bản ghi. Thêm phân bổ ở trên."}
+            {search ? "Không tìm thấy." : "Chưa có bản ghi."}
           </div>
         ) : (
           <>

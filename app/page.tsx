@@ -36,7 +36,7 @@ function formatVND(n: number) {
   return n.toLocaleString("vi-VN");
 }
 
-const MONTH_LABELS = ["", "Th01", "Th02", "Th03", "Th04", "Th05", "Th06", "Th07", "Th08", "Th09", "Th10", "Th11", "Th12"];
+const MONTH_LABELS = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /* ─── Month Colors (12 unique hues) ──────────────────────────── */
 const MONTH_COLORS = [
@@ -290,7 +290,7 @@ function BudgetWidget({ data, budgetYear, onYearChange }: {
             <span
               key={m}
               className={cn(
-                "flex-1 text-center text-[10px] md:text-[11px] font-semibold leading-none transition-colors",
+                "flex-1 text-center text-[9px] md:text-[11px] font-semibold leading-none transition-colors",
                 !entry && "opacity-30",
                 isActive ? "" : "text-[#999] dark:text-[#666]"
               )}
